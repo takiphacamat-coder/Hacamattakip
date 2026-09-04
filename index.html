@@ -30,7 +30,7 @@
   .container{ max-width:480px; margin:0 auto; }
 
   header{ text-align:center; margin-bottom:18px; }
-  header h1{ font-size:1.2rem; font-weight:700; letter-spacing:-0.01em; color:var(--crimson); }
+  header h1{ font-size:1.2rem; font-weight:700; letter-spacing:-0.01em; color:var(--ink); }
 
   /* ---- Kabarık / 3D taban (koyu neumorphism) ---- */
   .puff{
@@ -86,6 +86,7 @@
   }
   #tabBtnOccupancy::after{ display:none; }
   #tabBtnOccupancy{ font-size:0.54rem; line-height:1.15; white-space:normal; }
+  #tabBtnList{ font-size:0.54rem; line-height:1.15; white-space:normal; }
   #tabBtnCompleted{ grid-column: 1 / -1; }
   .tab-btn.active{
     color:#fff;
@@ -371,9 +372,9 @@
   .occ-day.muted{ visibility:hidden; }
   .occ-day.today{ box-shadow: inset 0 0 0 2px rgba(216,57,90,0.8); }
   .occ-day.occ-empty{
-    color:#6b7280;
-    background:var(--input-bg);
-    box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+    color:#fff;
+    background:linear-gradient(160deg, var(--green), var(--green-deep));
+    box-shadow: 3px 3px 7px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
   }
   .occ-day.occ-low{
     color:#fff;
@@ -396,7 +397,7 @@
   }
   .occ-legend-item{ display:flex; align-items:center; gap:5px; font-size:0.72rem; color:var(--ink-soft); font-weight:600; }
   .occ-dot{ width:11px; height:11px; border-radius:4px; display:inline-block; }
-  .occ-dot.occ-empty{ background:var(--input-bg); box-shadow: inset 1px 1px 2px var(--shadow-dark); }
+  .occ-dot.occ-empty{ background:linear-gradient(160deg, var(--green), var(--green-deep)); }
   .occ-dot.occ-low{ background:linear-gradient(160deg,#4d7ac9,#2f5aa0); }
   .occ-dot.occ-mid{ background:linear-gradient(160deg,#d99a34,#a56c1c); }
   .occ-dot.occ-high{ background:linear-gradient(160deg, var(--crimson), var(--crimson-deep)); }
@@ -443,7 +444,8 @@
   }
   .upcoming-row:last-child{ border-bottom:none; }
   .upcoming-info{ flex:1; min-width:0; }
-  .upcoming-date{ font-size:0.72rem; font-weight:700; color:var(--crimson); margin-bottom:2px; }
+  .upcoming-top{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+  .upcoming-date{ font-size:0.72rem; font-weight:700; color:var(--crimson); flex:0 0 auto; }
   .upcoming-name{
     font-weight:700; font-size:0.9rem; color:var(--ink);
     white-space:normal; word-break:break-word; line-height:1.25;
@@ -622,20 +624,20 @@
   #appRoot{ display:none; }
   .user-bar{
     display:flex; align-items:center; justify-content:flex-end; gap:10px;
-    margin-bottom:14px; padding:8px 12px;
+    margin-bottom:0; padding:0;
   }
   .user-bar-info{ display:none; }
   .user-bar-avatar{ width:28px; height:28px; border-radius:50%; flex:0 0 auto; }
   .user-bar-email{ font-size:0.72rem; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .logout-btn{
-    border:none; cursor:pointer; padding:9px 16px; border-radius:12px;
-    font-size:0.76rem; font-weight:700; color:#fff;
+    position:fixed; top:10px; right:10px; z-index:60;
+    border:none; cursor:pointer; padding:6px 10px; border-radius:9px;
+    font-size:0.62rem; font-weight:700; color:#fff;
     background:linear-gradient(160deg, var(--crimson), var(--crimson-deep));
-    box-shadow: 4px 4px 9px var(--shadow-dark), -3px -3px 8px var(--shadow-light);
-    flex:0 0 auto;
+    box-shadow: 3px 3px 7px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
   }
   .logout-btn:active{
-    box-shadow: inset 2px 2px 6px rgba(0,0,0,0.4), inset -2px -2px 6px rgba(255,255,255,0.03);
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.4), inset -2px -2px 5px rgba(255,255,255,0.03);
     transform: translateY(1px);
   }
 </style>
@@ -684,7 +686,7 @@
 
   <div class="tabbar">
     <button class="tab-btn active" id="tabBtnNew" onclick="switchTab('new')">✍️ Yeni Kayıt</button>
-    <button class="tab-btn" id="tabBtnList" onclick="switchTab('list')">📋 Kayıtlı</button>
+    <button class="tab-btn" id="tabBtnList" onclick="switchTab('list')">📋 Kayıtlı Kişiler</button>
     <button class="tab-btn" id="tabBtnUpcoming" onclick="switchTab('upcoming')">⏰ Yaklaşan<span class="tab-badge" id="upcomingBadge">0</span></button>
     <button class="tab-btn" id="tabBtnOccupancy" onclick="switchTab('occupancy')">📆 Randevu Takvimi</button>
     <button class="tab-btn" id="tabBtnCompleted" onclick="switchTab('completed')">✅ Tamamlanan</button>
@@ -1070,9 +1072,6 @@
 </script>
 
 <script>
-  // ABİNİN EV/DÜKKAN KONUM LİNKİ VEYA AÇIK ADRESİ
-  const ABININ_KONUM_LINKI = "https://maps.google.com/?q=40.758896,-73.985130";
-
   function switchTab(tab){
     document.getElementById('panel-new').classList.toggle('active', tab === 'new');
     document.getElementById('panel-list').classList.toggle('active', tab === 'list');
@@ -1258,12 +1257,36 @@
     const past = visits.slice().sort((a,b) => b.date.localeCompare(a.date));
     return { visit: past[0], label: 'Son' };
   }
-  function waLinkFor(p){
+  function cleanPhoneFor(p){
     let cleanPhone = p.phone.replace(/\D/g, '');
     if(cleanPhone.startsWith('0')) cleanPhone = '9' + cleanPhone;
     if(!cleanPhone.startsWith('90') && cleanPhone.length === 10) cleanPhone = '90' + cleanPhone;
-    const waMessage = encodeURIComponent(`Hatırlatma: Yarın hacamat randevunuz bulunmaktadır. Herhangi bir aksilik veya iptal durumunda lütfen bu WhatsApp hattı üzerinden dönüş yapınız.`);
-    return `https://wa.me/${cleanPhone}?text=${waMessage}`;
+    return cleanPhone;
+  }
+  function openWaReminder(p, locationLink){
+    const locationLine = locationLink ? `\n\nKonumum: ${locationLink}` : '';
+    const waMessage = encodeURIComponent(`Hatırlatma: Yarın hacamat randevunuz bulunmaktadır. Herhangi bir aksilik veya iptal durumunda lütfen bu WhatsApp hattı üzerinden dönüş yapınız.${locationLine}`);
+    window.open(`https://wa.me/${cleanPhoneFor(p)}?text=${waMessage}`, '_blank');
+  }
+  // Konum Gönder: butona basan kişinin O ANKİ canlı GPS konumunu alıp mesaja ekler (sabit adres değil)
+  function sendLocationReminder(patientId){
+    const p = getPatients().find(x => x.id === patientId);
+    if(!p) return;
+    if(!navigator.geolocation){
+      openWaReminder(p, null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const link = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+        openWaReminder(p, link);
+      },
+      () => {
+        alert('Konum alınamadı. Tarayıcı/telefon ayarlarından konum iznini açman gerekiyor.');
+        openWaReminder(p, null);
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
   }
   // Telefon numarasını "0544 444 44 44" biçiminde gösterir
   function formatPhoneDisplay(raw){
@@ -1515,12 +1538,13 @@
         <div class="row-index">${idx + 1}</div>
         <div class="patient-info">
           <div class="patient-name">${p.name}</div>
-          <div class="patient-sub"><a href="${telHrefFor(p.phone)}" class="phone-link-row" title="${formatPhoneDisplay(p.phone)}" onclick="event.stopPropagation()">📞</a> ${hacamatSub} ${countBadge}</div>
+          <div class="patient-sub">${hacamatSub} ${countBadge}</div>
           <div class="patient-date">Kayıt: ${p.createdDate || ''}</div>
           ${noteSub}
         </div>
         <div class="row-actions" onclick="event.stopPropagation()">
-          <a href="${waLinkFor(p)}" target="_blank" class="icon-btn icon-wa" title="Konum Gönder">📍</a>
+          <a href="${telHrefFor(p.phone)}" class="icon-btn icon-update" title="${formatPhoneDisplay(p.phone)}">📞</a>
+          <button class="icon-btn icon-wa" onclick="sendLocationReminder(${p.id})" title="Konum Gönder">📍</button>
           <button class="icon-btn icon-update" onclick="openEditModal(${p.id})" title="Güncelle">✏️</button>
         </div>
       `;
@@ -1547,8 +1571,10 @@
       row.innerHTML = `
         <div class="row-index">${idx + 1}</div>
         <div class="upcoming-info">
-          <div class="upcoming-date">🗓️ ${formatTRWithDay(v.date)}</div>
-          <div class="upcoming-name">${p.name}</div>
+          <div class="upcoming-top">
+            <span class="upcoming-date">🗓️ ${formatTRWithDay(v.date)}</span>
+            <span class="upcoming-name">${p.name}</span>
+          </div>
           ${v.note ? `<div class="upcoming-note">📝 ${v.note}</div>` : ''}
         </div>
       `;
@@ -1855,8 +1881,8 @@
       const safeArea = area.replace(/'/g, "\\'");
       return `
         <div class="region-chip ${active ? 'selected' : ''}">
-          <div class="region-chip-row" onclick="toggleAreaChip('${safeArea}')">
-            <span class="region-chip-check">${active ? '✅' : '◻️'}</span>
+          <div class="region-chip-row" onclick="onRegionRowClick('${safeArea}')">
+            <span class="region-chip-check" onclick="event.stopPropagation(); toggleAreaChip('${safeArea}')">${active ? '✅' : '◻️'}</span>
             <span class="region-chip-label">${area}</span>
           </div>
           ${active ? `
@@ -1872,6 +1898,13 @@
     if(Object.prototype.hasOwnProperty.call(selectedAreaCups, area)) delete selectedAreaCups[area];
     else selectedAreaCups[area] = 1;
     renderRegionChips();
+  }
+  function onRegionRowClick(area){
+    if(!Object.prototype.hasOwnProperty.call(selectedAreaCups, area)){
+      selectedAreaCups[area] = 1;
+      renderRegionChips();
+    }
+    openCupKeypad(area);
   }
   function updateAreaCups(area, value){
     const n = parseInt(value, 10);
