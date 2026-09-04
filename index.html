@@ -689,8 +689,9 @@
     <button class="tab-btn" id="tabBtnList" onclick="switchTab('list')">📋 Kayıtlı Kişiler</button>
     <button class="tab-btn" id="tabBtnUpcoming" onclick="switchTab('upcoming')">⏰ Yaklaşan<span class="tab-badge" id="upcomingBadge">0</span></button>
     <button class="tab-btn" id="tabBtnOccupancy" onclick="switchTab('occupancy')">📆 Randevu Takvimi</button>
-    <button class="tab-btn" id="tabBtnCompleted" onclick="switchTab('completed')">✅ Tamamlanan</button>
   </div>
+  <!-- Not: "Tamamlanan" artık ayrı bir sekme değil. O panele sadece Yaklaşan'dan
+       "Tamamlandı olarak işaretle" ile geliniyor (markUpcomingCompleted -> switchTab('completed')). -->
 
   <!-- SEKME 1: Yeni Kayıt -->
   <div class="panel active" id="panel-new">
@@ -1082,7 +1083,7 @@
     document.getElementById('tabBtnList').classList.toggle('active', tab === 'list');
     document.getElementById('tabBtnUpcoming').classList.toggle('active', tab === 'upcoming');
     document.getElementById('tabBtnOccupancy').classList.toggle('active', tab === 'occupancy');
-    document.getElementById('tabBtnCompleted').classList.toggle('active', tab === 'completed');
+    document.getElementById('tabBtnCompleted')?.classList.toggle('active', tab === 'completed');
     if(tab === 'list') renderPatients();
     if(tab === 'upcoming') renderUpcoming();
     if(tab === 'occupancy') renderOccupancy();
@@ -1916,9 +1917,9 @@
   let cupKeypadValue = '';
   function openCupKeypad(area){
     cupKeypadArea = area;
-    cupKeypadValue = String(selectedAreaCups[area] || 1);
+    cupKeypadValue = '';
     document.getElementById('cupKeypadTitle').textContent = area;
-    document.getElementById('cupKeypadDisplay').textContent = cupKeypadValue;
+    document.getElementById('cupKeypadDisplay').textContent = '';
     document.getElementById('cupKeypadOverlay').classList.add('open');
   }
   function closeCupKeypad(){
@@ -1932,7 +1933,7 @@
   }
   function keypadBackspace(){
     cupKeypadValue = cupKeypadValue.slice(0, -1);
-    document.getElementById('cupKeypadDisplay').textContent = cupKeypadValue || '0';
+    document.getElementById('cupKeypadDisplay').textContent = cupKeypadValue;
   }
   function keypadSave(){
     if(!cupKeypadArea) return;
