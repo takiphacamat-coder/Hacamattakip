@@ -30,7 +30,7 @@
   .container{ max-width:480px; margin:0 auto; }
 
   header{ text-align:center; margin-bottom:18px; }
-  header h1{ font-size:1.2rem; font-weight:700; letter-spacing:-0.01em; color:var(--ink); }
+  header h1{ font-size:1.2rem; font-weight:700; letter-spacing:-0.01em; color:var(--crimson); }
 
   /* ---- Kabarık / 3D taban (koyu neumorphism) ---- */
   .puff{
@@ -72,8 +72,7 @@
     cursor:pointer;
     transition:all .25s ease;
     white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
+    overflow:visible;
   }
   .tab-btn:not(:last-child)::after{
     content:"";
@@ -86,6 +85,7 @@
     background:transparent;
   }
   #tabBtnOccupancy::after{ display:none; }
+  #tabBtnOccupancy{ font-size:0.54rem; line-height:1.15; white-space:normal; }
   #tabBtnCompleted{ grid-column: 1 / -1; }
   .tab-btn.active{
     color:#fff;
@@ -93,12 +93,13 @@
     box-shadow: 3px 3px 8px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
   }
   .tab-badge{
-    position:absolute; top:2px; right:4px;
-    min-width:16px; height:16px; padding:0 4px;
+    position:absolute; top:-5px; right:0px;
+    min-width:15px; height:15px; padding:0 4px;
     border-radius:8px; background:var(--crimson);
-    color:#fff; font-size:0.6rem; font-weight:800;
+    color:#fff; font-size:0.58rem; font-weight:800;
     display:none; align-items:center; justify-content:center; line-height:1;
     box-shadow:0 0 0 2px #1b1d24;
+    z-index:2;
   }
   .tab-badge.show{ display:flex; }
 
@@ -229,6 +230,57 @@
     background:var(--bg-deep);
     box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
     color:var(--ink);
+  }
+  .cup-display{
+    width:70px; padding:8px 0; border-radius:10px; font-size:0.95rem; font-weight:800; text-align:center;
+    background:var(--bg-deep);
+    box-shadow: 3px 3px 7px var(--shadow-dark), -3px -3px 7px var(--shadow-light);
+    color:var(--crimson);
+    cursor:pointer; user-select:none;
+  }
+  .cup-display:active{
+    box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
+  }
+
+  /* ---- Kupa Sayısı Klavye Modalı ---- */
+  .cup-keypad-overlay{
+    display:none;
+    position:fixed; inset:0; z-index:300;
+    background:rgba(10,11,14,0.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    align-items:center;
+    justify-content:center;
+  }
+  .cup-keypad-overlay.open{ display:flex; animation:overlayFade .2s ease; }
+  .cup-keypad-sheet{
+    width:250px;
+    background:linear-gradient(160deg,#22252d,#191b21);
+    border-radius:20px;
+    padding:18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+    animation:sheetUp .2s ease;
+    text-align:center;
+  }
+  .cup-keypad-title{ font-size:0.78rem; font-weight:700; color:var(--ink-soft); margin-bottom:10px; }
+  .cup-keypad-display{
+    font-size:1.9rem; font-weight:800; color:var(--crimson);
+    background:var(--input-bg);
+    border-radius:14px; padding:8px 0; margin-bottom:14px;
+    box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+  }
+  .cup-keypad-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .keypad-key{
+    border:none; border-radius:12px; padding:14px 0; font-size:1.05rem; font-weight:700; color:var(--ink);
+    cursor:pointer;
+    background:linear-gradient(160deg,#262a34,#1a1c22);
+    box-shadow: 3px 3px 7px var(--shadow-dark), -3px -3px 7px var(--shadow-light);
+  }
+  .keypad-key:active{ box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light); }
+  .keypad-key-del{ color:var(--crimson); }
+  .keypad-key-save{
+    color:#fff;
+    background:linear-gradient(160deg, var(--green), var(--green-deep));
   }
 
   .visit-type-badge{
@@ -390,10 +442,13 @@
     cursor:pointer;
   }
   .upcoming-row:last-child{ border-bottom:none; }
+  .upcoming-info{ flex:1; min-width:0; }
+  .upcoming-date{ font-size:0.72rem; font-weight:700; color:var(--crimson); margin-bottom:2px; }
   .upcoming-name{
-    flex:1; min-width:0; font-weight:700; font-size:0.9rem; color:var(--ink);
+    font-weight:700; font-size:0.9rem; color:var(--ink);
     white-space:normal; word-break:break-word; line-height:1.25;
   }
+  .upcoming-note{ font-size:0.72rem; color:var(--ink-soft); font-style:italic; margin-top:2px; word-break:break-word; }
   .upcoming-row .icon-btn{ flex:0 0 auto; width:34px; height:34px; font-size:0.9rem; }
   .btn-wa{
     border:none; padding:10px 12px; border-radius:12px; font-size:0.8rem; font-weight:700;
@@ -543,7 +598,15 @@
     0%, 100%{ opacity:0.55; transform:scale(0.94); }
     50%{ opacity:1; transform:scale(1.04); }
   }
-  #loginScreen h1{ font-size:1.3rem; font-weight:700; color:var(--ink); letter-spacing:-0.01em; }
+  #loginScreen h1{
+    font-size:1.35rem; font-weight:800; letter-spacing:0.04em; text-transform:uppercase;
+    color:#ffffff;
+    text-shadow:
+      0 0 4px rgba(255,255,255,0.95),
+      0 0 10px rgba(255,255,255,0.8),
+      0 0 22px rgba(255,255,255,0.55),
+      0 0 42px rgba(216,57,90,0.5);
+  }
   #loginScreen p{ font-size:0.83rem; color:var(--ink-soft); max-width:270px; line-height:1.55; margin-top:2px; }
   .google-btn{
     display:flex; align-items:center; justify-content:center; gap:10px;
@@ -565,11 +628,16 @@
   .user-bar-avatar{ width:28px; height:28px; border-radius:50%; flex:0 0 auto; }
   .user-bar-email{ font-size:0.72rem; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .logout-btn{
-    border:none; background:transparent; color:var(--ink-soft);
-    font-size:0.72rem; font-weight:700; cursor:pointer; padding:6px 8px;
+    border:none; cursor:pointer; padding:9px 16px; border-radius:12px;
+    font-size:0.76rem; font-weight:700; color:#fff;
+    background:linear-gradient(160deg, var(--crimson), var(--crimson-deep));
+    box-shadow: 4px 4px 9px var(--shadow-dark), -3px -3px 8px var(--shadow-light);
     flex:0 0 auto;
   }
-  .logout-btn:active{ opacity:0.6; }
+  .logout-btn:active{
+    box-shadow: inset 2px 2px 6px rgba(0,0,0,0.4), inset -2px -2px 6px rgba(255,255,255,0.03);
+    transform: translateY(1px);
+  }
 </style>
 </head>
 <body>
@@ -591,7 +659,7 @@
       </svg>
       <span style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:2.1rem;">🩸</span>
     </div>
-    <h1>Hacamat Müşteri Takip</h1>
+    <h1>HACAMAT TAKİBİM</h1>
     <p>Verileriniz Google hesabınıza bağlı olarak güvenle saklanır. Devam etmek için Google ile giriş yapın.</p>
     <button class="google-btn" id="googleSignInBtn" onclick="signInWithGoogle()">
       <svg class="g-icon" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
@@ -603,6 +671,9 @@
 
 <div id="appRoot">
 <div class="container">
+  <header>
+    <h1>Hacamat Müşteri Takip</h1>
+  </header>
   <div class="user-bar">
     <div class="user-bar-info">
       <img class="user-bar-avatar" id="userAvatar" src="" alt="">
@@ -610,15 +681,12 @@
     </div>
     <button class="logout-btn" onclick="signOutUser()">Çıkış Yap</button>
   </div>
-  <header>
-    <h1>Hacamat Müşteri Takip</h1>
-  </header>
 
   <div class="tabbar">
     <button class="tab-btn active" id="tabBtnNew" onclick="switchTab('new')">✍️ Yeni Kayıt</button>
     <button class="tab-btn" id="tabBtnList" onclick="switchTab('list')">📋 Kayıtlı</button>
     <button class="tab-btn" id="tabBtnUpcoming" onclick="switchTab('upcoming')">⏰ Yaklaşan<span class="tab-badge" id="upcomingBadge">0</span></button>
-    <button class="tab-btn" id="tabBtnOccupancy" onclick="switchTab('occupancy')">📆 Doluluk</button>
+    <button class="tab-btn" id="tabBtnOccupancy" onclick="switchTab('occupancy')">📆 Randevu Takvimi</button>
     <button class="tab-btn" id="tabBtnCompleted" onclick="switchTab('completed')">✅ Tamamlanan</button>
   </div>
 
@@ -674,7 +742,7 @@
   <!-- SEKME 4: Takvim Doluluk Oranı -->
   <div class="panel" id="panel-occupancy">
     <div class="card puff">
-      <h2>📆 Takvim Doluluk Oranı</h2>
+      <h2>📆 Randevu Takvimi</h2>
       <div class="cal-header">
         <button class="cal-nav" onclick="changeOccMonth(-1)">‹</button>
         <span class="cal-title" id="occCalTitle"></span>
@@ -842,6 +910,28 @@
     <div class="modal-actions">
       <button class="modal-btn today-btn" style="color:var(--crimson);" id="visitDeleteBtn" onclick="deleteVisitFromModal()">🗑️ Sil</button>
       <button class="modal-btn confirm-btn" onclick="saveVisitEdit()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Kupa Sayısı Klavye Modalı -->
+<div class="cup-keypad-overlay" id="cupKeypadOverlay">
+  <div class="cup-keypad-sheet">
+    <div class="cup-keypad-title" id="cupKeypadTitle">Kaç kupa?</div>
+    <div class="cup-keypad-display" id="cupKeypadDisplay">1</div>
+    <div class="cup-keypad-grid">
+      <button class="keypad-key" onclick="keypadPress('1')">1</button>
+      <button class="keypad-key" onclick="keypadPress('2')">2</button>
+      <button class="keypad-key" onclick="keypadPress('3')">3</button>
+      <button class="keypad-key" onclick="keypadPress('4')">4</button>
+      <button class="keypad-key" onclick="keypadPress('5')">5</button>
+      <button class="keypad-key" onclick="keypadPress('6')">6</button>
+      <button class="keypad-key" onclick="keypadPress('7')">7</button>
+      <button class="keypad-key" onclick="keypadPress('8')">8</button>
+      <button class="keypad-key" onclick="keypadPress('9')">9</button>
+      <button class="keypad-key keypad-key-del" onclick="keypadBackspace()">⌫</button>
+      <button class="keypad-key" onclick="keypadPress('0')">0</button>
+      <button class="keypad-key keypad-key-save" onclick="keypadSave()">✔</button>
     </div>
   </div>
 </div>
@@ -1425,7 +1515,7 @@
         <div class="row-index">${idx + 1}</div>
         <div class="patient-info">
           <div class="patient-name">${p.name}</div>
-          <div class="patient-sub"><a href="${telHrefFor(p.phone)}" class="phone-link-row" onclick="event.stopPropagation()">📞 ${formatPhoneDisplay(p.phone)}</a> ${hacamatSub} ${countBadge}</div>
+          <div class="patient-sub"><a href="${telHrefFor(p.phone)}" class="phone-link-row" title="${formatPhoneDisplay(p.phone)}" onclick="event.stopPropagation()">📞</a> ${hacamatSub} ${countBadge}</div>
           <div class="patient-date">Kayıt: ${p.createdDate || ''}</div>
           ${noteSub}
         </div>
@@ -1456,9 +1546,11 @@
       row.onclick = () => openUpcomingAction(p.id, v.id);
       row.innerHTML = `
         <div class="row-index">${idx + 1}</div>
-        <div class="upcoming-name">🩸 ${p.name}</div>
-        <a href="${telHrefFor(p.phone)}" class="icon-btn icon-update" title="${formatPhoneDisplay(p.phone)}" onclick="event.stopPropagation()">📞</a>
-        <a href="${waLinkFor(p)}" target="_blank" class="icon-btn icon-wa" title="Konum Gönder" onclick="event.stopPropagation()">📍</a>
+        <div class="upcoming-info">
+          <div class="upcoming-date">🗓️ ${formatTRWithDay(v.date)}</div>
+          <div class="upcoming-name">${p.name}</div>
+          ${v.note ? `<div class="upcoming-note">📝 ${v.note}</div>` : ''}
+        </div>
       `;
       container.appendChild(row);
     });
@@ -1770,7 +1862,7 @@
           ${active ? `
           <div class="region-chip-cups">
             <label>Kaç kupa?</label>
-            <input type="number" min="1" class="cup-input" value="${cups}" onclick="event.stopPropagation()" oninput="updateAreaCups('${safeArea}', this.value)">
+            <div class="cup-display" onclick="event.stopPropagation(); openCupKeypad('${safeArea}')">${cups}</div>
           </div>` : ''}
         </div>
       `;
@@ -1784,6 +1876,37 @@
   function updateAreaCups(area, value){
     const n = parseInt(value, 10);
     selectedAreaCups[area] = (n && n > 0) ? n : 1;
+  }
+
+  /* ---- Kupa Sayısı Klavye Modalı ---- */
+  let cupKeypadArea = null;
+  let cupKeypadValue = '';
+  function openCupKeypad(area){
+    cupKeypadArea = area;
+    cupKeypadValue = String(selectedAreaCups[area] || 1);
+    document.getElementById('cupKeypadTitle').textContent = area;
+    document.getElementById('cupKeypadDisplay').textContent = cupKeypadValue;
+    document.getElementById('cupKeypadOverlay').classList.add('open');
+  }
+  function closeCupKeypad(){
+    document.getElementById('cupKeypadOverlay').classList.remove('open');
+    cupKeypadArea = null;
+  }
+  function keypadPress(d){
+    if(cupKeypadValue.length >= 3) return;
+    cupKeypadValue = (cupKeypadValue === '0') ? d : (cupKeypadValue + d);
+    document.getElementById('cupKeypadDisplay').textContent = cupKeypadValue;
+  }
+  function keypadBackspace(){
+    cupKeypadValue = cupKeypadValue.slice(0, -1);
+    document.getElementById('cupKeypadDisplay').textContent = cupKeypadValue || '0';
+  }
+  function keypadSave(){
+    if(!cupKeypadArea) return;
+    const n = parseInt(cupKeypadValue, 10);
+    selectedAreaCups[cupKeypadArea] = (n && n > 0) ? n : 1;
+    closeCupKeypad();
+    renderRegionChips();
   }
 
   let completedSelectedPatientId = null;
@@ -1899,6 +2022,9 @@
   });
   document.getElementById('upcomingActionOverlay').addEventListener('click', function(e){
     if(e.target === this) closeUpcomingAction();
+  });
+  document.getElementById('cupKeypadOverlay').addEventListener('click', function(e){
+    if(e.target === this) closeCupKeypad();
   });
 
   // Not: renderPatients()/updateUpcomingBadge()/renderRegionChips() artık burada değil —
