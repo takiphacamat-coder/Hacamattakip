@@ -1,0 +1,1787 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Hacamat Müşteri Takip</title>
+<style>
+  :root{
+    --bg: #1b1d24;
+    --bg-deep: #14161b;
+    --shadow-light: #262a34;
+    --shadow-dark: #0e0f13;
+    --ink: #eef1f6;
+    --ink-soft: #9aa1b0;
+    --crimson: #d8395a;
+    --crimson-deep: #9c1730;
+    --green: #23b26d;
+    --green-deep: #178a54;
+    --blue: #4da3ff;
+    --input-bg: #20232b;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    padding:18px 14px 40px;
+    min-height:100vh;
+  }
+  .container{ max-width:480px; margin:0 auto; }
+
+  header{ text-align:center; margin-bottom:18px; }
+  header h1{ font-size:1.2rem; font-weight:700; letter-spacing:-0.01em; color:var(--ink); }
+
+  /* ---- Kabarık / 3D taban (koyu neumorphism) ---- */
+  .puff{
+    background:linear-gradient(160deg,#22252d,#191b21);
+    border-radius:16px;
+    box-shadow:
+      6px 6px 14px var(--shadow-dark),
+      -6px -6px 14px var(--shadow-light);
+    border:1px solid rgba(255,255,255,0.04);
+  }
+  .puff:active{
+    box-shadow:
+      inset 3px 3px 8px var(--shadow-dark),
+      inset -3px -3px 8px var(--shadow-light);
+    transform: translateY(1px);
+  }
+
+  /* ---- Sekme geçişi ---- */
+  .tabbar{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:6px;
+    padding:5px;
+    margin-bottom:16px;
+    border-radius:18px;
+    background:linear-gradient(160deg,#15171c,#20232b);
+    box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light);
+  }
+  .tab-btn{
+    position:relative;
+    flex:1;
+    border:none;
+    padding:9px 2px;
+    font-size:0.6rem;
+    font-weight:600;
+    color:var(--ink-soft);
+    background:transparent;
+    border-radius:14px;
+    cursor:pointer;
+    transition:all .25s ease;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .tab-btn:not(:last-child)::after{
+    content:"";
+    position:absolute;
+    top:14%; bottom:14%; right:-3px;
+    width:1.5px;
+    background:rgba(255,255,255,0.28);
+  }
+  .tab-btn.active::after, .tab-btn.active + .tab-btn::after{
+    background:transparent;
+  }
+  #tabBtnOccupancy::after{ display:none; }
+  #tabBtnCompleted{ grid-column: 1 / -1; }
+  .tab-btn.active{
+    color:#fff;
+    background:linear-gradient(160deg, var(--crimson), var(--crimson-deep));
+    box-shadow: 3px 3px 8px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
+  }
+  .tab-badge{
+    position:absolute; top:2px; right:4px;
+    min-width:16px; height:16px; padding:0 4px;
+    border-radius:8px; background:var(--crimson);
+    color:#fff; font-size:0.6rem; font-weight:800;
+    display:none; align-items:center; justify-content:center; line-height:1;
+    box-shadow:0 0 0 2px #1b1d24;
+  }
+  .tab-badge.show{ display:flex; }
+
+  .panel{ display:none; }
+  .panel.active{ display:block; animation:fade .2s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+
+  .card{ padding:18px 16px; margin-bottom:16px; }
+  .card h2{ font-size:1rem; font-weight:700; color:var(--ink); margin-bottom:14px; text-align:center; letter-spacing:-0.01em; }
+
+  label{ font-size:0.78rem; font-weight:600; color:var(--ink-soft); display:block; margin-top:12px; margin-bottom:6px; }
+
+  input[type="text"], input[type="tel"]{
+    width:100%; padding:12px 14px; border:none; border-radius:12px; font-size:0.95rem; outline:none;
+    background:var(--input-bg);
+    box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+    color:var(--ink);
+  }
+  input::placeholder{ color:#6b7280; }
+  input:focus{ box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light), 0 0 0 2px rgba(216,57,90,0.35); }
+
+  textarea{
+    width:100%; padding:12px 14px; border:none; border-radius:12px; font-size:0.95rem; outline:none;
+    background:var(--input-bg);
+    box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+    color:var(--ink);
+    font-family:inherit; resize:vertical; min-height:64px;
+  }
+  textarea::placeholder{ color:#6b7280; }
+  textarea:focus{ box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light), 0 0 0 2px rgba(216,57,90,0.35); }
+
+  /* Tarih seçici tetikleyici */
+  .date-trigger{
+    width:100%; padding:12px 14px; border:none; border-radius:12px; font-size:0.95rem;
+    background:var(--input-bg);
+    box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+    color:var(--ink-soft);
+    display:flex; align-items:center; justify-content:space-between;
+    cursor:pointer;
+  }
+  .date-trigger.has-value{ color:var(--ink); font-weight:600; }
+  .date-trigger .cal-icon{ font-size:1rem; opacity:0.8; }
+  .date-trigger-actions{ display:flex; align-items:center; gap:8px; }
+  .filter-clear{
+    border:none; background:transparent; color:var(--ink-soft);
+    font-size:0.8rem; font-weight:800; cursor:pointer; padding:2px 4px;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .filter-clear:active{ opacity:0.6; }
+
+  /* Ad Soyad otomatik tamamlama */
+  .autocomplete-wrap{ position:relative; }
+  .autocomplete-list{
+    display:none;
+    margin-top:6px;
+    border-radius:12px;
+    background:var(--input-bg);
+    box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+    overflow:hidden;
+  }
+  .autocomplete-list.show{ display:block; }
+  .autocomplete-item{
+    padding:10px 14px; font-size:0.88rem; color:var(--ink); cursor:pointer;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .autocomplete-item:last-child{ border-bottom:none; }
+  .autocomplete-item:active{ background:rgba(255,255,255,0.06); }
+  .autocomplete-item .ac-phone{ font-size:0.72rem; color:var(--ink-soft); margin-top:2px; }
+
+  .selected-person-chip{
+    display:none;
+    align-items:center; justify-content:space-between; gap:8px;
+    margin-top:8px; padding:9px 12px; border-radius:12px;
+    background:linear-gradient(160deg,#1f3a2c,#16281f);
+    border:1px solid rgba(35,178,109,0.35);
+    font-size:0.8rem; color:var(--green);
+  }
+  .selected-person-chip.show{ display:flex; }
+  .selected-person-chip .chip-clear{
+    border:none; background:transparent; color:var(--ink-soft);
+    font-weight:800; cursor:pointer; padding:2px 6px; font-size:0.85rem;
+  }
+
+  .visit-row{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 4px;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .visit-row:last-child{ border-bottom:none; }
+  .visit-row-info{ flex:1; min-width:0; }
+  .visit-row-date{ font-weight:700; font-size:0.88rem; color:var(--ink); }
+  .visit-row-note{ font-size:0.72rem; color:var(--ink-soft); font-style:italic; margin-top:2px; word-break:break-word; }
+  .visit-row .icon-btn{ flex:0 0 auto; width:34px; height:34px; font-size:0.88rem; }
+  .history-add-btn{
+    width:100%; border:none; padding:11px; border-radius:12px; font-size:0.85rem; font-weight:700;
+    margin-top:12px; cursor:pointer; color:#fff;
+    background:linear-gradient(160deg,#2fd480,var(--green-deep));
+    box-shadow: 4px 4px 9px var(--shadow-dark), -3px -3px 8px var(--shadow-light);
+  }
+  .history-add-btn:active{ transform:translateY(1px); }
+  .visit-count-badge{
+    font-size:0.68rem; font-weight:700; color:var(--ink-soft);
+    background:var(--input-bg); border-radius:8px; padding:2px 7px; margin-left:6px;
+  }
+
+  /* Tamamlanan Hacamat: bölge seçim listesi */
+  .region-chip-list{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+  .region-chip{
+    border-radius:12px;
+    background:var(--input-bg);
+    box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+    overflow:hidden;
+  }
+  .region-chip.selected{ box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light), 0 0 0 1.5px rgba(35,178,109,0.55); }
+  .region-chip-row{
+    display:flex; align-items:center; gap:10px;
+    padding:11px 12px; cursor:pointer;
+  }
+  .region-chip-check{ font-size:0.95rem; flex:0 0 auto; }
+  .region-chip-label{ font-size:0.85rem; color:var(--ink); flex:1; }
+  .region-chip-cups{
+    display:flex; align-items:center; gap:8px;
+    padding:0 12px 12px 36px;
+  }
+  .region-chip-cups label{ margin:0; font-size:0.72rem; }
+  .cup-input{
+    width:70px; padding:8px 10px; border:none; border-radius:10px; font-size:0.9rem; outline:none;
+    background:var(--bg-deep);
+    box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
+    color:var(--ink);
+  }
+
+  .visit-type-badge{
+    font-size:0.62rem; font-weight:700; border-radius:7px; padding:1px 6px; margin-left:6px;
+    vertical-align:middle;
+  }
+  .visit-type-badge.session{ background:rgba(35,178,109,0.18); color:var(--green); }
+  .visit-type-badge.visit{ background:rgba(77,163,255,0.18); color:var(--blue); }
+  .session-areas{ margin-top:4px; }
+  .session-area-line{ font-size:0.75rem; color:var(--ink-soft); line-height:1.5; }
+
+  .btn-main{
+    width:100%; border:none; padding:14px; border-radius:14px; font-size:0.98rem; font-weight:700;
+    margin-top:20px; cursor:pointer; color:#fff; letter-spacing:0.01em;
+    background:linear-gradient(160deg, #e0304f, var(--crimson-deep));
+    box-shadow: 5px 5px 12px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
+  }
+  .btn-main:active{
+    box-shadow: inset 3px 3px 7px rgba(0,0,0,0.4), inset -3px -3px 7px rgba(255,255,255,0.03);
+    transform: translateY(1px);
+  }
+
+  /* Liste alanı */
+  .search-box{ margin-bottom:14px; }
+
+  /* ---- Kayıtlı kişiler: satır (liste) görünümü ---- */
+  .patient-row{
+    display:flex; align-items:center; gap:10px;
+    padding:12px 12px; margin-bottom:10px;
+  }
+  .row-index{
+    flex:0 0 26px; width:26px; height:26px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.72rem; font-weight:800; color:#fff;
+    background:linear-gradient(160deg,#565c6b,#33373f);
+    box-shadow: 2px 2px 5px var(--shadow-dark), -2px -2px 5px var(--shadow-light);
+  }
+  .patient-info{ flex:1; min-width:0; }
+  .patient-name{ font-weight:700; font-size:0.98rem; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .patient-sub{
+    font-size:0.75rem; color:var(--ink-soft); margin-top:3px;
+    display:flex; flex-wrap:wrap; gap:4px 10px; align-items:center;
+  }
+  .phone-link-row{
+    color:var(--blue); font-weight:600; text-decoration:none;
+    display:inline-flex; align-items:center; gap:3px;
+  }
+  .phone-link-row:active{ opacity:0.6; }
+  .patient-sub .sub-hacamat{ color:var(--crimson); font-weight:600; }
+  .patient-date{ font-size:0.68rem; color:#6b7280; margin-top:2px; }
+  .patient-note{ font-size:0.72rem; color:var(--ink-soft); margin-top:4px; font-style:italic; word-break:break-word; }
+
+  .row-actions{ display:flex; gap:6px; flex:0 0 auto; }
+  .icon-btn{
+    border:none; width:38px; height:38px; border-radius:11px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1rem; cursor:pointer; text-decoration:none;
+    box-shadow: 4px 4px 9px var(--shadow-dark), -3px -3px 8px var(--shadow-light);
+  }
+  .icon-btn:active{
+    box-shadow: inset 2px 2px 6px rgba(0,0,0,0.4), inset -2px -2px 6px rgba(255,255,255,0.03);
+    transform: translateY(1px);
+  }
+  .icon-wa{ color:#fff; background:linear-gradient(160deg,#2fd480,var(--green-deep)); }
+  .icon-update{ color:#fff; background:linear-gradient(160deg,#5aa8ff,#2f6fcc); }
+
+  .empty-state{ text-align:center; color:#6b7280; font-size:0.88rem; padding:24px 0; }
+
+  /* ---- Takvim Doluluk Oranı ---- */
+  .occ-days{ display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-top:2px; }
+  .occ-day{
+    position:relative;
+    aspect-ratio:1; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:default;
+  }
+  .occ-day.occ-clickable{ cursor:pointer; }
+  .occ-day.occ-clickable:active{ transform:translateY(1px); }
+  .occ-day .occ-daynum{ font-size:0.85rem; font-weight:700; }
+  .occ-day .occ-count{
+    position:absolute; top:3px; right:3px;
+    min-width:15px; height:15px; padding:0 3px;
+    border-radius:7px; background:rgba(0,0,0,0.4);
+    font-size:0.52rem; font-weight:800; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .occ-day.muted{ visibility:hidden; }
+  .occ-day.today{ box-shadow: inset 0 0 0 2px rgba(216,57,90,0.8); }
+  .occ-day.occ-empty{
+    color:#6b7280;
+    background:var(--input-bg);
+    box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+  }
+  .occ-day.occ-low{
+    color:#fff;
+    background:linear-gradient(160deg,#4d7ac9,#2f5aa0);
+    box-shadow: 3px 3px 7px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
+  }
+  .occ-day.occ-mid{
+    color:#fff;
+    background:linear-gradient(160deg,#d99a34,#a56c1c);
+    box-shadow: 3px 3px 7px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
+  }
+  .occ-day.occ-high{
+    color:#fff;
+    background:linear-gradient(160deg, var(--crimson), var(--crimson-deep));
+    box-shadow: 3px 3px 7px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
+  }
+  .occ-legend{
+    display:flex; flex-wrap:wrap; gap:10px 14px;
+    justify-content:center; margin-top:16px;
+  }
+  .occ-legend-item{ display:flex; align-items:center; gap:5px; font-size:0.72rem; color:var(--ink-soft); font-weight:600; }
+  .occ-dot{ width:11px; height:11px; border-radius:4px; display:inline-block; }
+  .occ-dot.occ-empty{ background:var(--input-bg); box-shadow: inset 1px 1px 2px var(--shadow-dark); }
+  .occ-dot.occ-low{ background:linear-gradient(160deg,#4d7ac9,#2f5aa0); }
+  .occ-dot.occ-mid{ background:linear-gradient(160deg,#d99a34,#a56c1c); }
+  .occ-dot.occ-high{ background:linear-gradient(160deg, var(--crimson), var(--crimson-deep)); }
+
+  .day-modal-title{
+    font-size:1rem; font-weight:700; text-align:center;
+    margin-bottom:14px; color:var(--ink);
+  }
+  .day-row{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 4px;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .day-row:last-child{ border-bottom:none; }
+  .day-row-name{
+    flex:1; min-width:0;
+    font-weight:700; font-size:0.9rem; color:var(--ink);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .day-row .phone-link-row{ flex:0 0 auto; font-size:0.82rem; }
+  .day-row .icon-btn{ flex:0 0 auto; width:34px; height:34px; font-size:0.9rem; }
+
+  /* ---- Toast bildirim ---- */
+  .toast{
+    position:fixed; left:50%; top:50%; z-index:300;
+    transform:translate(-50%, -50%) scale(0.92);
+    background:linear-gradient(160deg,#2fd480,var(--green-deep));
+    color:#fff; font-size:0.88rem; font-weight:700;
+    padding:13px 20px; border-radius:14px;
+    display:flex; align-items:center; gap:8px;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.45);
+    opacity:0; pointer-events:none;
+    transition: opacity .25s ease, transform .25s ease;
+    max-width:90vw; text-align:center;
+  }
+  .toast.show{ opacity:1; transform:translate(-50%, -50%) scale(1); }
+
+  /* ---- Yaklaşanlar: tek satır (excel gibi) görünümü ---- */
+  .upcoming-row{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 4px;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .upcoming-row:last-child{ border-bottom:none; }
+  .upcoming-name{
+    flex:1; min-width:0; font-weight:700; font-size:0.9rem; color:var(--ink);
+    white-space:normal; word-break:break-word; line-height:1.25;
+  }
+  .upcoming-row .icon-btn{ flex:0 0 auto; width:34px; height:34px; font-size:0.9rem; }
+  .btn-wa{
+    border:none; padding:10px 12px; border-radius:12px; font-size:0.8rem; font-weight:700;
+    text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:5px;
+    cursor:pointer; flex:1; color:#fff;
+    background:linear-gradient(160deg,#2fd480,var(--green-deep));
+    box-shadow: 4px 4px 9px var(--shadow-dark), -3px -3px 8px var(--shadow-light);
+  }
+  .btn-wa:active{
+    box-shadow: inset 2px 2px 6px rgba(0,0,0,0.4), inset -2px -2px 6px rgba(255,255,255,0.03);
+    transform: translateY(1px);
+  }
+
+  /* ---- Modern Tarih Modalı ---- */
+  .modal-overlay{
+    display:none;
+    position:fixed; inset:0; z-index:100;
+    background:rgba(10,11,14,0.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    align-items:flex-end;
+    justify-content:center;
+  }
+  .modal-overlay.open{ display:flex; animation:overlayFade .2s ease; }
+  @keyframes overlayFade{ from{opacity:0;} to{opacity:1;} }
+  #dateModalOverlay{ z-index:200; }
+  #editModalOverlay{ z-index:100; }
+  #deleteConfirmOverlay{ z-index:250; }
+  #sessionDeleteConfirmOverlay{ z-index:250; }
+
+  .modal-sheet{
+    width:100%; max-width:420px;
+    background:linear-gradient(160deg,#22252d,#191b21);
+    border-radius:22px 22px 0 0;
+    padding:18px 18px 26px;
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.5);
+    animation:sheetUp .25s ease;
+  }
+  @media (min-width:480px){
+    .modal-overlay{ align-items:center; }
+    .modal-sheet{ border-radius:22px; }
+  }
+  @keyframes sheetUp{ from{ transform:translateY(24px); opacity:0; } to{ transform:translateY(0); opacity:1; } }
+
+  .modal-handle{ width:36px; height:4px; border-radius:2px; background:#3a3f4a; margin:0 auto 14px; }
+
+  .cal-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .cal-title{ font-size:1rem; font-weight:700; color:var(--ink); }
+  .cal-nav{
+    width:34px; height:34px; border-radius:10px; border:none; cursor:pointer;
+    background:linear-gradient(160deg,#262a34,#1a1c22);
+    color:var(--ink); font-size:0.95rem;
+    box-shadow: 3px 3px 7px var(--shadow-dark), -3px -3px 7px var(--shadow-light);
+  }
+  .cal-nav:active{ box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light); }
+
+  .cal-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:6px; }
+  .cal-weekdays span{ text-align:center; font-size:0.7rem; font-weight:600; color:var(--ink-soft); padding:6px 0; }
+
+  .cal-days{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .cal-day{
+    aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:1px; border-radius:10px; font-size:0.85rem; color:var(--ink); cursor:pointer;
+    background:transparent; border:none;
+  }
+  .cal-daynum{ font-size:0.85rem; line-height:1; }
+  .cal-daycount{ font-size:0.52rem; font-weight:800; line-height:1; }
+  .cal-day.muted{ color:#4a4f5a; }
+  .cal-day:active{ background:rgba(255,255,255,0.06); }
+  .cal-day.cal-day-empty{ background:rgba(77,163,255,0.16); color:#bcdcff; }
+  .cal-day.cal-day-empty .cal-daynum{ color:#bcdcff; }
+  .cal-day.cal-day-busy{ background:rgba(216,57,90,0.14); }
+  .cal-day.cal-day-busy .cal-daycount{ color:var(--crimson); }
+  .cal-day.today{ box-shadow: inset 0 0 0 1px rgba(216,57,90,0.6); }
+  .cal-day.selected{
+    color:#fff; font-weight:700;
+    background:linear-gradient(160deg, var(--crimson), var(--crimson-deep));
+    box-shadow: 3px 3px 7px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
+  }
+  .cal-day.selected .cal-daynum, .cal-day.selected .cal-daycount{ color:#fff; }
+  .cal-legend{
+    display:flex; flex-wrap:wrap; gap:10px 14px; justify-content:center; margin-top:14px;
+  }
+  .cal-legend-item{ display:flex; align-items:center; gap:5px; font-size:0.7rem; color:var(--ink-soft); font-weight:600; }
+  .cal-legend-dot{ width:11px; height:11px; border-radius:4px; display:inline-block; }
+  .cal-legend-dot.empty{ background:rgba(77,163,255,0.35); }
+  .cal-legend-dot.busy{ background:rgba(216,57,90,0.35); }
+
+  .modal-actions{ display:flex; gap:8px; margin-top:18px; }
+  .confirm-icon{ font-size:2.2rem; text-align:center; margin-bottom:8px; }
+  .modal-btn{
+    flex:1; border:none; padding:12px; border-radius:12px; font-size:0.88rem; font-weight:700; cursor:pointer;
+  }
+  .modal-btn.today-btn{
+    color:var(--ink);
+    background:linear-gradient(160deg,#262a34,#1a1c22);
+    box-shadow: 3px 3px 7px var(--shadow-dark), -3px -3px 7px var(--shadow-light);
+  }
+  .modal-btn.confirm-btn{
+    color:#fff;
+    background:linear-gradient(160deg, #e0304f, var(--crimson-deep));
+    box-shadow: 3px 3px 7px var(--shadow-dark), -3px -3px 7px var(--shadow-light);
+  }
+  .modal-btn:active{ transform:translateY(1px); }
+
+  /* ---- Giriş Ekranı ---- */
+  #loginScreen{
+    position:fixed; inset:0; z-index:500;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:22px; padding:24px;
+    background:radial-gradient(circle at 50% 20%, #22252d, var(--bg-deep) 70%);
+    text-align:center;
+  }
+  #loginScreen .login-logo{ font-size:3rem; }
+  #loginScreen h1{ font-size:1.25rem; font-weight:700; color:var(--ink); }
+  #loginScreen p{ font-size:0.85rem; color:var(--ink-soft); max-width:280px; line-height:1.5; }
+  .google-btn{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    padding:13px 22px; border:none; border-radius:14px; cursor:pointer;
+    background:linear-gradient(160deg,#22252d,#191b21);
+    box-shadow: 4px 4px 10px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
+    color:var(--ink); font-size:0.92rem; font-weight:700;
+  }
+  .google-btn:active{ transform:translateY(1px); box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light); }
+  .google-btn .g-icon{ width:20px; height:20px; }
+  #loginStatus{ font-size:0.8rem; color:var(--ink-soft); min-height:18px; }
+  #appRoot{ display:none; }
+  .user-bar{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin-bottom:14px; padding:8px 12px;
+  }
+  .user-bar-info{ display:flex; align-items:center; gap:8px; min-width:0; }
+  .user-bar-avatar{ width:28px; height:28px; border-radius:50%; flex:0 0 auto; }
+  .user-bar-email{ font-size:0.72rem; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .logout-btn{
+    border:none; background:transparent; color:var(--ink-soft);
+    font-size:0.72rem; font-weight:700; cursor:pointer; padding:6px 8px;
+    flex:0 0 auto;
+  }
+  .logout-btn:active{ opacity:0.6; }
+</style>
+</head>
+<body>
+
+<!-- Giriş Ekranı (Google ile Giriş) -->
+<div id="loginScreen">
+  <div class="login-logo">🩸</div>
+  <h1>Hacamat Müşteri Takip</h1>
+  <p>Verileriniz Google hesabınıza bağlı olarak güvenle saklanır. Devam etmek için Google ile giriş yapın.</p>
+  <button class="google-btn" id="googleSignInBtn" onclick="signInWithGoogle()">
+    <svg class="g-icon" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+    Google ile Giriş Yap
+  </button>
+  <div id="loginStatus"></div>
+</div>
+
+<div id="appRoot">
+<div class="container">
+  <div class="user-bar">
+    <div class="user-bar-info">
+      <img class="user-bar-avatar" id="userAvatar" src="" alt="">
+      <span class="user-bar-email" id="userEmail"></span>
+    </div>
+    <button class="logout-btn" onclick="signOutUser()">Çıkış Yap</button>
+  </div>
+  <header>
+    <h1>Hacamat Müşteri Takip</h1>
+  </header>
+
+  <div class="tabbar">
+    <button class="tab-btn active" id="tabBtnNew" onclick="switchTab('new')">✍️ Yeni Kayıt</button>
+    <button class="tab-btn" id="tabBtnList" onclick="switchTab('list')">📋 Kayıtlı</button>
+    <button class="tab-btn" id="tabBtnUpcoming" onclick="switchTab('upcoming')">⏰ Yaklaşan<span class="tab-badge" id="upcomingBadge">0</span></button>
+    <button class="tab-btn" id="tabBtnOccupancy" onclick="switchTab('occupancy')">📆 Doluluk</button>
+    <button class="tab-btn" id="tabBtnCompleted" onclick="switchTab('completed')">✅ Tamamlanan</button>
+  </div>
+
+  <!-- SEKME 1: Yeni Kayıt -->
+  <div class="panel active" id="panel-new">
+    <div class="card puff">
+      <h2>Yeni Hacamat Kaydı</h2>
+
+      <label for="name">Ad Soyad</label>
+      <div class="autocomplete-wrap">
+        <input type="text" id="name" autocomplete="off" oninput="onNameInput()" onblur="setTimeout(function(){ document.getElementById('nameSuggestions').classList.remove('show'); }, 180)">
+        <div class="autocomplete-list" id="nameSuggestions"></div>
+      </div>
+      <div class="selected-person-chip" id="selectedPersonChip">
+        <span id="selectedPersonChipText">✅ Mevcut kişi seçildi — yeni randevu eklenecek</span>
+        <button type="button" class="chip-clear" onclick="clearSelectedPatient()">✕</button>
+      </div>
+
+      <label for="phone">Telefon Numarası</label>
+      <input type="tel" id="phone" oninput="formatPhoneInput(this)" maxlength="14">
+
+      <label for="dateTrigger">Hacamat Yapılacak Tarih</label>
+      <div class="date-trigger" id="dateTrigger" onclick="openDateModal()">
+        <span id="dateTriggerText">Tarih seçin</span>
+        <span class="cal-icon">📅</span>
+      </div>
+
+      <label for="note">Özel Not (varsa)</label>
+      <textarea id="note" rows="3" placeholder="Bu randevuya özel not varsa giriniz"></textarea>
+
+      <button class="btn-main" onclick="savePatient()">KAYDET</button>
+    </div>
+  </div>
+
+  <!-- SEKME 2: Kayıtlı Kişiler -->
+  <div class="panel" id="panel-list">
+    <div class="card puff">
+      <h2>Kayıtlı Kişiler</h2>
+      <input type="text" id="search" class="search-box" placeholder="İsim veya tel ile ara..." oninput="renderPatients()">
+
+      <div id="patientList" style="margin-top:14px;"></div>
+    </div>
+  </div>
+
+  <!-- SEKME 3: Hacamat Yaklaşanlar -->
+  <div class="panel" id="panel-upcoming">
+    <div class="card puff">
+      <h2>⏰ Hacamat Yaklaşanlar</h2>
+      <div id="upcomingList"></div>
+    </div>
+  </div>
+
+  <!-- SEKME 4: Takvim Doluluk Oranı -->
+  <div class="panel" id="panel-occupancy">
+    <div class="card puff">
+      <h2>📆 Takvim Doluluk Oranı</h2>
+      <div class="cal-header">
+        <button class="cal-nav" onclick="changeOccMonth(-1)">‹</button>
+        <span class="cal-title" id="occCalTitle"></span>
+        <button class="cal-nav" onclick="changeOccMonth(1)">›</button>
+      </div>
+      <div class="cal-weekdays">
+        <span>Pt</span><span>Sa</span><span>Ça</span><span>Pe</span><span>Cu</span><span>Ct</span><span>Pz</span>
+      </div>
+      <div class="occ-days" id="occDays"></div>
+      <div class="occ-legend">
+        <span class="occ-legend-item"><i class="occ-dot occ-empty"></i>Boş</span>
+        <span class="occ-legend-item"><i class="occ-dot occ-high"></i>Dolu — sayı, o gündeki kişi sayısıdır</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEKME 5: Tamamlanan Hacamat -->
+  <div class="panel" id="panel-completed">
+    <div class="card puff">
+      <h2>✅ Tamamlanan Hacamat</h2>
+
+      <label for="completedName">Ad Soyad</label>
+      <div class="autocomplete-wrap">
+        <input type="text" id="completedName" autocomplete="off" oninput="onCompletedNameInput()" onblur="setTimeout(function(){ document.getElementById('completedNameSuggestions').classList.remove('show'); }, 180)">
+        <div class="autocomplete-list" id="completedNameSuggestions"></div>
+      </div>
+      <div class="selected-person-chip" id="completedSelectedChip">
+        <span id="completedSelectedChipText">✅ Kişi seçildi</span>
+        <button type="button" class="chip-clear" onclick="clearSelectedCompletedPatient()">✕</button>
+      </div>
+
+      <label for="completedDateTrigger">Hacamat Yapılan Tarih</label>
+      <div class="date-trigger" id="completedDateTrigger" onclick="openDateModal('completed')">
+        <span id="completedDateTriggerText">Tarih seçin</span>
+        <span class="cal-icon">📅</span>
+      </div>
+
+      <label>Uygulanan Bölgeler</label>
+      <div class="region-chip-list" id="regionChipList"></div>
+
+      <label for="completedNote">Özel Not (varsa)</label>
+      <textarea id="completedNote" rows="3" placeholder="İsterseniz not giriniz"></textarea>
+
+      <button class="btn-main" onclick="saveCompletedSession()">KAYDET</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Modern Tarih Modalı -->
+<div class="modal-overlay" id="dateModalOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="cal-header">
+      <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
+      <span class="cal-title" id="calTitle"></span>
+      <button class="cal-nav" onclick="changeMonth(1)">›</button>
+    </div>
+    <div class="cal-weekdays">
+      <span>Pt</span><span>Sa</span><span>Ça</span><span>Pe</span><span>Cu</span><span>Ct</span><span>Pz</span>
+    </div>
+    <div class="cal-days" id="calDays"></div>
+    <div class="cal-legend" id="calLegend">
+      <span class="cal-legend-item"><i class="cal-legend-dot empty"></i>Boş gün</span>
+      <span class="cal-legend-item"><i class="cal-legend-dot busy"></i>Dolu (kişi sayısı)</span>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn today-btn" onclick="pickToday()">Bugün</button>
+      <button class="modal-btn confirm-btn" onclick="closeDateModal()">Tamam</button>
+    </div>
+  </div>
+</div>
+
+<!-- Gün Detayı Modalı (Doluluk takviminden) -->
+<div class="modal-overlay" id="dayModalOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2 class="day-modal-title" id="dayModalTitle"></h2>
+    <div id="dayModalList"></div>
+  </div>
+</div>
+
+<!-- Kişi Güncelleme Modalı -->
+<div class="modal-overlay" id="editModalOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2 style="font-size:1rem; font-weight:700; text-align:center; margin-bottom:14px; color:var(--ink);">Kişiyi Güncelle</h2>
+
+    <label for="editName">Ad Soyad</label>
+    <input type="text" id="editName" placeholder="Örn: Ahmet Yılmaz" oninput="toUpperLastWord('editName')">
+
+    <label for="editPhone">Telefon Numarası</label>
+    <input type="tel" id="editPhone" placeholder="0544 444 44 44" oninput="formatPhoneInput(this)" maxlength="14">
+
+    <label for="editDateTrigger">Hacamat Tarihi</label>
+    <div class="date-trigger" id="editDateTrigger" onclick="openDateModal('edit')">
+      <span id="editDateTriggerText">Tarih seçin</span>
+      <span class="cal-icon">📅</span>
+    </div>
+
+    <label for="editNote">Genel Not (varsa)</label>
+    <textarea id="editNote" rows="3" placeholder="Kişiyle ilgili genel not"></textarea>
+
+    <div class="modal-actions">
+      <button class="modal-btn today-btn" style="color:var(--crimson);" onclick="deleteFromEdit()">🗑️ Sil</button>
+      <button class="modal-btn confirm-btn" onclick="saveEdit()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Silme Onay Modalı -->
+<div class="modal-overlay" id="deleteConfirmOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="confirm-icon">🗑️</div>
+    <h2 style="font-size:1rem; font-weight:700; text-align:center; margin-bottom:6px; color:var(--ink);">Kaydı Sil</h2>
+    <p style="font-size:0.85rem; text-align:center; color:var(--ink-soft); margin-bottom:4px;">Bu kaydı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
+    <div class="modal-actions">
+      <button class="modal-btn today-btn" onclick="closeDeleteConfirm()">Vazgeç</button>
+      <button class="modal-btn confirm-btn" style="background:linear-gradient(160deg, var(--crimson), var(--crimson-deep));" onclick="confirmDelete()">🗑️ Sil</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tamamlanan Kayıt Silme Onay Modalı -->
+<div class="modal-overlay" id="sessionDeleteConfirmOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="confirm-icon">🗑️</div>
+    <h2 style="font-size:1rem; font-weight:700; text-align:center; margin-bottom:6px; color:var(--ink);">Tamamlanan Kaydı Sil</h2>
+    <p style="font-size:0.85rem; text-align:center; color:var(--ink-soft); margin-bottom:4px;">Bu tamamlanan hacamat kaydını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
+    <div class="modal-actions">
+      <button class="modal-btn today-btn" onclick="closeSessionDeleteConfirm()">Vazgeç</button>
+      <button class="modal-btn confirm-btn" style="background:linear-gradient(160deg, var(--crimson), var(--crimson-deep));" onclick="confirmSessionDelete()">🗑️ Sil</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Geçmiş Modalı (kişinin tüm hacamat tarihleri) -->
+<div class="modal-overlay" id="historyModalOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2 class="day-modal-title" id="historyModalTitle"></h2>
+    <div id="historyModalList"></div>
+    <button class="history-add-btn" onclick="openVisitEditModal(null)">➕ Yeni Randevu Ekle</button>
+  </div>
+</div>
+
+<!-- Randevu (Ziyaret) Düzenleme Modalı -->
+<div class="modal-overlay" id="visitEditModalOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2 style="font-size:1rem; font-weight:700; text-align:center; margin-bottom:14px; color:var(--ink);" id="visitEditModalTitle">Randevu Ekle</h2>
+
+    <label for="visitDateTrigger">Hacamat Tarihi</label>
+    <div class="date-trigger" id="visitDateTrigger" onclick="openDateModal('visit')">
+      <span id="visitDateTriggerText">Tarih seçin</span>
+      <span class="cal-icon">📅</span>
+    </div>
+
+    <label for="visitNote">Bu Randevuya Özel Not (varsa)</label>
+    <textarea id="visitNote" rows="3" placeholder="Özel not varsa giriniz"></textarea>
+
+    <div class="modal-actions">
+      <button class="modal-btn today-btn" style="color:var(--crimson);" id="visitDeleteBtn" onclick="deleteVisitFromModal()">🗑️ Sil</button>
+      <button class="modal-btn confirm-btn" onclick="saveVisitEdit()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast bildirim -->
+<div class="toast" id="toast">✅ Başarıyla eklendi!</div>
+
+<!-- Firebase (Google Giriş + Firestore) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+  /* =======================================================================
+     FIREBASE AYARLARI — BURAYI KENDİ FIREBASE PROJENİN BİLGİLERİYLE DOLDUR
+     Firebase Console > Proje Ayarları > "Web uygulaman" bölümünden alınır.
+     ======================================================================= */
+  const firebaseConfig = {
+    apiKey: "BURAYA_API_KEY",
+    authDomain: "BURAYA_PROJE.firebaseapp.com",
+    projectId: "BURAYA_PROJE_ID",
+    storageBucket: "BURAYA_PROJE.appspot.com",
+    messagingSenderId: "BURAYA_SENDER_ID",
+    appId: "BURAYA_APP_ID"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+  let currentUser = null;
+  let cachedPatients = [];   // Firestore'dan gelen/oraya giden veri, bellekte tutulur
+  let firestoreReady = false;
+
+  function signInWithGoogle(){
+    document.getElementById('loginStatus').textContent = 'Giriş yapılıyor...';
+    auth.signInWithPopup(googleProvider).catch(err => {
+      console.error(err);
+      document.getElementById('loginStatus').textContent = 'Giriş başarısız: ' + err.message;
+    });
+  }
+  function signOutUser(){
+    auth.signOut();
+  }
+
+  function userDocRef(){
+    return db.collection('hacamat_kullanicilari').doc(currentUser.uid);
+  }
+
+  // Eski (visits alanı olmayan) kayıt biçimini bugünkü biçime çevirir — localStorage döneminde de kullanılan aynı mantık
+  function migratePatientShape(list){
+    return (list || []).map(p => {
+      if(!p.visits){
+        const visits = [];
+        if(p.hacamatDate || p.hacematDate || p.note){
+          visits.push({ id: p.id, date: p.hacamatDate || p.hacematDate || '', note: p.note || '' });
+        }
+        return {
+          id: p.id,
+          name: p.name,
+          phone: p.phone,
+          note: '',
+          createdDate: p.date || new Date().toLocaleDateString('tr-TR'),
+          visits: visits
+        };
+      }
+      return p;
+    });
+  }
+
+  // Kullanıcı ilk kez giriş yapıyorsa ve bu tarayıcıda daha önce (girişsiz haldeyken) kaydedilmiş
+  // yerel veri varsa, kaybolmasın diye otomatik olarak Firestore'a taşır.
+  function migrateLocalDataIfNeeded(){
+    return new Promise(resolve => {
+      const localRaw = localStorage.getItem('hacamat_data') || localStorage.getItem('hacemat_data');
+      if(!localRaw) return resolve();
+      let localPatients;
+      try{ localPatients = JSON.parse(localRaw); } catch(e){ return resolve(); }
+      if(!Array.isArray(localPatients) || localPatients.length === 0) return resolve();
+      userDocRef().get().then(doc => {
+        if(doc.exists && Array.isArray(doc.data().patients) && doc.data().patients.length > 0){
+          // Firestore'da zaten veri var, üzerine yazma
+          return resolve();
+        }
+        const migrated = migratePatientShape(localPatients);
+        userDocRef().set({ patients: migrated, email: currentUser.email, updatedAt: Date.now() }, { merge:true })
+          .then(resolve).catch(resolve);
+      }).catch(resolve);
+    });
+  }
+
+  function loadPatientsFromFirestore(){
+    firestoreReady = false;
+    return userDocRef().get().then(doc => {
+      cachedPatients = migratePatientShape(doc.exists ? (doc.data().patients || []) : []);
+      firestoreReady = true;
+      renderPatients();
+      updateUpcomingBadge();
+      renderRegionChips();
+    }).catch(err => {
+      console.error('Firestore okuma hatası', err);
+      firestoreReady = true;
+    });
+  }
+
+  auth.onAuthStateChanged(user => {
+    currentUser = user;
+    if(user){
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('appRoot').style.display = 'block';
+      document.getElementById('userEmail').textContent = user.email || '';
+      document.getElementById('userAvatar').src = user.photoURL || '';
+      migrateLocalDataIfNeeded().then(loadPatientsFromFirestore);
+    } else {
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('appRoot').style.display = 'none';
+      document.getElementById('loginStatus').textContent = '';
+      cachedPatients = [];
+    }
+  });
+</script>
+
+<script>
+  // ABİNİN EV/DÜKKAN KONUM LİNKİ VEYA AÇIK ADRESİ
+  const ABININ_KONUM_LINKI = "https://maps.google.com/?q=40.758896,-73.985130";
+
+  function switchTab(tab){
+    document.getElementById('panel-new').classList.toggle('active', tab === 'new');
+    document.getElementById('panel-list').classList.toggle('active', tab === 'list');
+    document.getElementById('panel-upcoming').classList.toggle('active', tab === 'upcoming');
+    document.getElementById('panel-occupancy').classList.toggle('active', tab === 'occupancy');
+    document.getElementById('panel-completed').classList.toggle('active', tab === 'completed');
+    document.getElementById('tabBtnNew').classList.toggle('active', tab === 'new');
+    document.getElementById('tabBtnList').classList.toggle('active', tab === 'list');
+    document.getElementById('tabBtnUpcoming').classList.toggle('active', tab === 'upcoming');
+    document.getElementById('tabBtnOccupancy').classList.toggle('active', tab === 'occupancy');
+    document.getElementById('tabBtnCompleted').classList.toggle('active', tab === 'completed');
+    if(tab === 'list') renderPatients();
+    if(tab === 'upcoming') renderUpcoming();
+    if(tab === 'occupancy') renderOccupancy();
+    if(tab === 'completed') renderRegionChips();
+  }
+
+  /* ---------- Modern Tarih Modalı ---------- */
+  let calViewDate = new Date();
+  let selectedDate = null; // ISO yyyy-mm-dd (yeni kayıt formu)
+  let visitSelectedDate = null; // ISO yyyy-mm-dd (randevu ekle/düzenle mini modalı)
+  let editSelectedDate = null; // ISO yyyy-mm-dd (kayıtlı kişi güncelleme modalı)
+  let completedSelectedDate = null; // ISO yyyy-mm-dd (tamamlanan hacamat formu)
+  let dateModalContext = 'new'; // 'new' | 'visit' | 'edit' | 'completed' — tarih modalı hangi form için açıldı
+
+  const AY_ADLARI = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+  const GUN_ADLARI = ["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
+
+  function openDateModal(context){
+    dateModalContext = (context === 'visit' || context === 'edit' || context === 'completed') ? context : 'new';
+    const current = getContextDate();
+    calViewDate = current ? new Date(current) : new Date();
+    renderCalendar();
+    document.getElementById('dateModalOverlay').classList.add('open');
+  }
+  function closeDateModal(){
+    document.getElementById('dateModalOverlay').classList.remove('open');
+  }
+  function changeMonth(delta){
+    calViewDate.setMonth(calViewDate.getMonth() + delta);
+    renderCalendar();
+  }
+  function pickToday(){
+    const t = new Date();
+    const iso = toISO(t);
+    if(dateModalContext === 'visit') visitSelectedDate = iso;
+    else if(dateModalContext === 'edit') editSelectedDate = iso;
+    else if(dateModalContext === 'completed') completedSelectedDate = iso;
+    else selectedDate = iso;
+    calViewDate = new Date(t);
+    renderCalendar();
+    updateDateTrigger();
+  }
+  function toISO(d){
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function formatTR(iso){
+    if(!iso) return '';
+    const [y,m,d] = iso.split('-');
+    return `${d}.${m}.${y}`;
+  }
+  // Tarihi gün adıyla birlikte yazar: 04.09.2026 (Cuma)
+  function formatTRWithDay(iso){
+    if(!iso) return '';
+    const [y,m,d] = iso.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    const gun = GUN_ADLARI[dateObj.getDay()];
+    return `${String(d).padStart(2,'0')}.${String(m).padStart(2,'0')}.${y} (${gun})`;
+  }
+  function setTriggerDisplay(triggerId, textId, iso, placeholder){
+    const el = document.getElementById(textId);
+    const trigger = document.getElementById(triggerId);
+    if(iso){
+      el.textContent = formatTRWithDay(iso);
+      trigger.classList.add('has-value');
+    } else {
+      el.textContent = placeholder || 'Tarih seçin';
+      trigger.classList.remove('has-value');
+    }
+  }
+  function updateDateTrigger(){
+    if(dateModalContext === 'visit'){
+      setTriggerDisplay('visitDateTrigger', 'visitDateTriggerText', visitSelectedDate);
+    } else if(dateModalContext === 'edit'){
+      setTriggerDisplay('editDateTrigger', 'editDateTriggerText', editSelectedDate);
+    } else if(dateModalContext === 'completed'){
+      setTriggerDisplay('completedDateTrigger', 'completedDateTriggerText', completedSelectedDate);
+    } else {
+      setTriggerDisplay('dateTrigger', 'dateTriggerText', selectedDate);
+    }
+  }
+
+  function getContextDate(){
+    if(dateModalContext === 'visit') return visitSelectedDate;
+    if(dateModalContext === 'edit') return editSelectedDate;
+    if(dateModalContext === 'completed') return completedSelectedDate;
+    return selectedDate;
+  }
+
+  function renderCalendar(){
+    const year = calViewDate.getFullYear();
+    const month = calViewDate.getMonth();
+    document.getElementById('calTitle').textContent = `${AY_ADLARI[month]} ${year}`;
+
+    const firstDay = new Date(year, month, 1);
+    // Pazartesi=0 ... Pazar=6 olacak şekilde ayarla
+    let startOffset = firstDay.getDay() - 1;
+    if(startOffset < 0) startOffset = 6;
+
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+    const todayISO = toISO(new Date());
+    const activeSelected = getContextDate();
+    const counts = getVisitCountsByDate();
+
+    const grid = document.getElementById('calDays');
+    grid.innerHTML = '';
+
+    for(let i = startOffset - 1; i >= 0; i--){
+      grid.innerHTML += `<button class="cal-day muted" disabled><span class="cal-daynum">${daysInPrevMonth - i}</span></button>`;
+    }
+    for(let d = 1; d <= daysInMonth; d++){
+      const iso = toISO(new Date(year, month, d));
+      const count = counts[iso] || 0;
+      let cls = 'cal-day ' + (count === 0 ? 'cal-day-empty' : 'cal-day-busy');
+      if(iso === todayISO) cls += ' today';
+      if(iso === activeSelected) cls += ' selected';
+      const countHtml = count > 0 ? `<span class="cal-daycount">${count}</span>` : '';
+      grid.innerHTML += `<button class="${cls}" onclick="selectDay('${iso}')"><span class="cal-daynum">${d}</span>${countHtml}</button>`;
+    }
+    const totalCells = startOffset + daysInMonth;
+    const trailing = (7 - (totalCells % 7)) % 7;
+    for(let d = 1; d <= trailing; d++){
+      grid.innerHTML += `<button class="cal-day muted" disabled><span class="cal-daynum">${d}</span></button>`;
+    }
+    document.getElementById('calLegend').style.display = 'flex';
+  }
+
+  function selectDay(iso){
+    if(dateModalContext === 'visit') visitSelectedDate = iso;
+    else if(dateModalContext === 'edit') editSelectedDate = iso;
+    else if(dateModalContext === 'completed') completedSelectedDate = iso;
+    else selectedDate = iso;
+    renderCalendar();
+    updateDateTrigger();
+  }
+
+  /* ---------- Depolama yardımcıları (Firestore, kullanıcıya özel) ---------- */
+  function getPatients(){
+    return cachedPatients;
+  }
+  function setPatients(patients){
+    cachedPatients = patients;
+    if(currentUser){
+      userDocRef().set({ patients, email: currentUser.email, updatedAt: Date.now() }, { merge:true })
+        .catch(err => console.error('Firestore kayıt hatası', err));
+    }
+  }
+  /* Tüm kişilerin tüm randevularını tek listede döner: {patient, visit} */
+  function getAllVisitsFlat(){
+    const flat = [];
+    getPatients().forEach(p => {
+      (p.visits || []).forEach(v => flat.push({ patient: p, visit: v }));
+    });
+    return flat;
+  }
+  /* Tarihe göre randevu sayıları (doluluk takvimi için) */
+  function getVisitCountsByDate(){
+    const counts = {};
+    getAllVisitsFlat().forEach(({visit}) => {
+      if(visit.date) counts[visit.date] = (counts[visit.date] || 0) + 1;
+    });
+    return counts;
+  }
+  /* Bir kişi için satırda gösterilecek en uygun randevu: sıradaki (bugün dahil gelecek) yoksa en son geçmiş */
+  function getDisplayVisitFor(patient){
+    const todayISO = toISO(new Date());
+    const visits = (patient.visits || []).filter(v => v.date);
+    if(visits.length === 0) return null;
+    const upcoming = visits.filter(v => v.date >= todayISO).sort((a,b) => a.date.localeCompare(b.date));
+    if(upcoming.length > 0) return { visit: upcoming[0], label: 'Sıradaki' };
+    const past = visits.slice().sort((a,b) => b.date.localeCompare(a.date));
+    return { visit: past[0], label: 'Son' };
+  }
+  function waLinkFor(p){
+    let cleanPhone = p.phone.replace(/\D/g, '');
+    if(cleanPhone.startsWith('0')) cleanPhone = '9' + cleanPhone;
+    if(!cleanPhone.startsWith('90') && cleanPhone.length === 10) cleanPhone = '90' + cleanPhone;
+    const waMessage = encodeURIComponent(`Hatırlatma: Yarın hacamat randevunuz bulunmaktadır. Herhangi bir aksilik veya iptal durumunda lütfen bu WhatsApp hattı üzerinden dönüş yapınız.`);
+    return `https://wa.me/${cleanPhone}?text=${waMessage}`;
+  }
+  // Telefon numarasını "0544 444 44 44" biçiminde gösterir
+  function formatPhoneDisplay(raw){
+    let digits = (raw || '').replace(/\D/g, '');
+    if(digits.startsWith('90') && digits.length === 12) digits = '0' + digits.slice(2);
+    if(!digits.startsWith('0') && digits.length === 10) digits = '0' + digits;
+    if(digits.length !== 11) return raw;
+    return `${digits.slice(0,4)} ${digits.slice(4,7)} ${digits.slice(7,9)} ${digits.slice(9,11)}`;
+  }
+  // Telefon kutusuna yazarken canlı olarak "0544 444 44 44" biçimine sokar
+  function formatPhoneInput(el){
+    let digits = el.value.replace(/\D/g, '').slice(0, 11);
+    let result = digits.slice(0, 4);
+    if(digits.length > 4) result += ' ' + digits.slice(4, 7);
+    if(digits.length > 7) result += ' ' + digits.slice(7, 9);
+    if(digits.length > 9) result += ' ' + digits.slice(9, 11);
+    el.value = result;
+  }
+  function telHrefFor(raw){
+    let digits = (raw || '').replace(/\D/g, '');
+    if(digits.startsWith('90') && digits.length === 12) digits = '0' + digits.slice(2);
+    if(!digits.startsWith('0') && digits.length === 10) digits = '0' + digits;
+    return `tel:${digits || raw}`;
+  }
+  // Ad Soyad kutusunda soyadı (son kelimeyi) yazarken otomatik büyük harfe çevirir
+  function toUpperLastWord(fieldId){
+    const el = document.getElementById(fieldId);
+    const pos = el.selectionStart;
+    const value = el.value;
+    const idx = value.lastIndexOf(' ');
+    if(idx === -1) return; // henüz soyad kısmına geçilmedi
+    const first = value.slice(0, idx + 1);
+    const last = value.slice(idx + 1);
+    const upperLast = last.toLocaleUpperCase('tr-TR');
+    if(last !== upperLast){
+      el.value = first + upperLast;
+      el.setSelectionRange(pos, pos);
+    }
+  }
+
+  /* ---------- Ad Soyad otomatik tamamlama (mevcut kişiyi bulup tekrar randevu almak için) ---------- */
+  let selectedExistingPatientId = null;
+
+  function onNameInput(){
+    toUpperLastWord('name');
+    const nameEl = document.getElementById('name');
+    // Seçili kişi varken isim elle değiştirilirse seçim geçersiz sayılır
+    if(selectedExistingPatientId){
+      const p = getPatients().find(x => x.id === selectedExistingPatientId);
+      if(!p || p.name !== nameEl.value) clearSelectedPatient();
+    }
+    const query = nameEl.value.trim().toLocaleLowerCase('tr-TR');
+    const list = document.getElementById('nameSuggestions');
+    if(!query){
+      list.classList.remove('show');
+      list.innerHTML = '';
+      return;
+    }
+    const matches = getPatients()
+      .filter(p => p.name.toLocaleLowerCase('tr-TR').includes(query))
+      .slice(0, 6);
+    if(matches.length === 0){
+      list.classList.remove('show');
+      list.innerHTML = '';
+      return;
+    }
+    list.innerHTML = matches.map(p => `
+      <div class="autocomplete-item" onclick="selectExistingPatient(${p.id})">
+        <div>${p.name}</div>
+        <div class="ac-phone">📞 ${formatPhoneDisplay(p.phone)}</div>
+      </div>
+    `).join('');
+    list.classList.add('show');
+  }
+  function selectExistingPatient(id){
+    const p = getPatients().find(x => x.id === id);
+    if(!p) return;
+    selectedExistingPatientId = id;
+    document.getElementById('name').value = p.name;
+    document.getElementById('phone').value = p.phone;
+    document.getElementById('nameSuggestions').classList.remove('show');
+    document.getElementById('nameSuggestions').innerHTML = '';
+    const chip = document.getElementById('selectedPersonChip');
+    document.getElementById('selectedPersonChipText').textContent = `✅ ${p.name} seçildi — yeni randevu eklenecek`;
+    chip.classList.add('show');
+  }
+  function clearSelectedPatient(){
+    selectedExistingPatientId = null;
+    document.getElementById('selectedPersonChip').classList.remove('show');
+  }
+
+  /* ---------- Yeni kayıt / yeni randevu ---------- */
+  function savePatient(){
+    const name = document.getElementById('name').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const note = document.getElementById('note').value.trim();
+
+    if(!name || !phone){
+      alert("Lütfen Ad Soyad ve Telefon alanlarını doldurun!");
+      return;
+    }
+
+    let patients = getPatients();
+
+    if(selectedExistingPatientId && patients.some(p => p.id === selectedExistingPatientId)){
+      patients = patients.map(p => {
+        if(p.id !== selectedExistingPatientId) return p;
+        const visits = (p.visits || []).slice();
+        visits.push({ id: Date.now(), date: selectedDate || '', note: note });
+        return { ...p, phone: phone, visits: visits };
+      });
+      setPatients(patients);
+      showToast('✅ Yeni randevu eklendi!');
+    } else {
+      const newPatient = {
+        id: Date.now(),
+        name: name,
+        phone: phone,
+        note: '',
+        createdDate: new Date().toLocaleDateString('tr-TR'),
+        visits: [{ id: Date.now(), date: selectedDate || '', note: note }]
+      };
+      patients.unshift(newPatient);
+      setPatients(patients);
+      showToast('✅ Başarıyla eklendi!');
+    }
+
+    document.getElementById('name').value = '';
+    document.getElementById('phone').value = '';
+    document.getElementById('note').value = '';
+    document.getElementById('nameSuggestions').classList.remove('show');
+    document.getElementById('nameSuggestions').innerHTML = '';
+    clearSelectedPatient();
+    selectedDate = null;
+    dateModalContext = 'new';
+    updateDateTrigger();
+
+    renderPatients();
+    updateUpcomingBadge();
+  }
+
+  /* ---------- Toast bildirim ---------- */
+  let toastTimer = null;
+  function showToast(message){
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2200);
+  }
+
+  /* ---------- Güncelleme modalı ---------- */
+  let editingPatientId = null;
+  let editingVisitId = null; // düzenlenen kişinin gösterilen randevusu (varsa)
+
+  function openEditModal(id){
+    const p = getPatients().find(x => x.id === id);
+    if(!p) return;
+    editingPatientId = id;
+    document.getElementById('editName').value = p.name;
+    document.getElementById('editPhone').value = p.phone;
+    document.getElementById('editNote').value = p.note || '';
+
+    const display = getDisplayVisitFor(p);
+    editingVisitId = display ? display.visit.id : null;
+    editSelectedDate = display ? (display.visit.date || null) : null;
+    dateModalContext = 'edit';
+    setTriggerDisplay('editDateTrigger', 'editDateTriggerText', editSelectedDate);
+
+    document.getElementById('editModalOverlay').classList.add('open');
+  }
+  function closeEditModal(){
+    document.getElementById('editModalOverlay').classList.remove('open');
+    editingPatientId = null;
+    editingVisitId = null;
+  }
+  function saveEdit(){
+    const name = document.getElementById('editName').value.trim();
+    const phone = document.getElementById('editPhone').value.trim();
+    const note = document.getElementById('editNote').value.trim();
+    if(!name || !phone){
+      alert("Lütfen Ad Soyad ve Telefon alanlarını doldurun!");
+      return;
+    }
+    let patients = getPatients().map(p => {
+      if(p.id !== editingPatientId) return p;
+      let visits = (p.visits || []).slice();
+      if(editingVisitId !== null){
+        visits = visits.map(v => v.id === editingVisitId ? { ...v, date: editSelectedDate || '' } : v);
+      } else if(editSelectedDate){
+        visits.push({ id: Date.now(), date: editSelectedDate, note: '' });
+      }
+      return { ...p, name, phone, note, visits };
+    });
+    setPatients(patients);
+    closeEditModal();
+    renderPatients();
+    updateUpcomingBadge();
+  }
+  function deleteFromEdit(){
+    document.getElementById('deleteConfirmOverlay').classList.add('open');
+  }
+  function closeDeleteConfirm(){
+    document.getElementById('deleteConfirmOverlay').classList.remove('open');
+  }
+  function confirmDelete(){
+    const patients = getPatients().filter(p => p.id !== editingPatientId);
+    setPatients(patients);
+    closeDeleteConfirm();
+    closeEditModal();
+    renderPatients();
+    updateUpcomingBadge();
+  }
+
+  /* ---------- Kayıtlı kişiler (satır listesi) ---------- */
+  function renderPatients(){
+    const search = document.getElementById('search').value.toLowerCase();
+    const patients = getPatients();
+    const listContainer = document.getElementById('patientList');
+    listContainer.innerHTML = '';
+
+    const filtered = patients.filter(p =>
+      p.name.toLowerCase().includes(search) || p.phone.includes(search)
+    );
+
+    if(filtered.length === 0){
+      listContainer.innerHTML = '<p class="empty-state">Kayıt bulunamadı.</p>';
+      return;
+    }
+
+    filtered.forEach((p, idx) => {
+      const visitCount = (p.visits || []).length;
+      const display = getDisplayVisitFor(p);
+      const hacamatSub = display
+        ? `<span class="sub-hacamat">🗓️ ${display.label}: ${formatTRWithDay(display.visit.date)}</span>`
+        : '';
+      const countBadge = visitCount > 0 ? `<span class="visit-count-badge">${visitCount} ziyaret</span>` : '';
+      const noteSub = (display && display.visit.note)
+        ? `<div class="patient-note">📝 ${display.visit.note}</div>`
+        : '';
+
+      const row = document.createElement('div');
+      row.className = 'patient-row puff';
+      row.style.cursor = 'pointer';
+      row.onclick = () => openHistoryModal(p.id);
+      row.innerHTML = `
+        <div class="row-index">${idx + 1}</div>
+        <div class="patient-info">
+          <div class="patient-name">${p.name}</div>
+          <div class="patient-sub"><a href="${telHrefFor(p.phone)}" class="phone-link-row" onclick="event.stopPropagation()">📞 ${formatPhoneDisplay(p.phone)}</a> ${hacamatSub} ${countBadge}</div>
+          <div class="patient-date">Kayıt: ${p.createdDate || ''}</div>
+          ${noteSub}
+        </div>
+        <div class="row-actions" onclick="event.stopPropagation()">
+          <a href="${waLinkFor(p)}" target="_blank" class="icon-btn icon-wa" title="Konum Gönder">📍</a>
+          <button class="icon-btn icon-update" onclick="openEditModal(${p.id})" title="Güncelle">✏️</button>
+        </div>
+      `;
+      listContainer.appendChild(row);
+    });
+  }
+
+  /* ---------- Hacamat Yaklaşanlar ---------- */
+  function renderUpcoming(){
+    const tomorrowISO = toISO(new Date(Date.now() + 86400000));
+    const list = getAllVisitsFlat().filter(({visit}) => visit.date === tomorrowISO);
+
+    const container = document.getElementById('upcomingList');
+    container.innerHTML = '';
+    if(list.length === 0){
+      container.innerHTML = '<p class="empty-state">Yarın için planlanmış hacamat yok.</p>';
+      updateUpcomingBadge(0);
+      return;
+    }
+    list.forEach(({patient: p}, idx) => {
+      const row = document.createElement('div');
+      row.className = 'upcoming-row';
+      row.innerHTML = `
+        <div class="row-index">${idx + 1}</div>
+        <div class="upcoming-name">🩸 ${p.name}</div>
+        <a href="${telHrefFor(p.phone)}" class="icon-btn icon-update" title="${formatPhoneDisplay(p.phone)}">📞</a>
+        <a href="${waLinkFor(p)}" target="_blank" class="icon-btn icon-wa" title="Konum Gönder">📍</a>
+      `;
+      container.appendChild(row);
+    });
+    updateUpcomingBadge(list.length);
+  }
+
+  /* ---------- Takvim Doluluk Oranı ---------- */
+  let occViewDate = new Date();
+
+  function changeOccMonth(delta){
+    occViewDate.setMonth(occViewDate.getMonth() + delta);
+    renderOccupancy();
+  }
+  function occupancyClass(count){
+    if(count === 0) return 'occ-empty';
+    if(count === 1) return 'occ-low';
+    if(count <= 3) return 'occ-mid';
+    return 'occ-high';
+  }
+  function renderOccupancy(){
+    const year = occViewDate.getFullYear();
+    const month = occViewDate.getMonth();
+    document.getElementById('occCalTitle').textContent = `${AY_ADLARI[month]} ${year}`;
+
+    const counts = getVisitCountsByDate();
+
+    const firstDay = new Date(year, month, 1);
+    let startOffset = firstDay.getDay() - 1;
+    if(startOffset < 0) startOffset = 6;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayISO = toISO(new Date());
+
+    const grid = document.getElementById('occDays');
+    grid.innerHTML = '';
+
+    for(let i = 0; i < startOffset; i++){
+      grid.innerHTML += `<div class="occ-day muted"></div>`;
+    }
+    for(let d = 1; d <= daysInMonth; d++){
+      const iso = toISO(new Date(year, month, d));
+      const count = counts[iso] || 0;
+      let cls = 'occ-day ' + occupancyClass(count);
+      if(iso === todayISO) cls += ' today';
+      if(count > 0) cls += ' occ-clickable';
+      const countHtml = count > 0 ? `<span class="occ-count">${count}</span>` : '';
+      const clickAttr = count > 0 ? ` onclick="openDayModal('${iso}')"` : '';
+      grid.innerHTML += `<div class="${cls}"${clickAttr}><span class="occ-daynum">${d}</span>${countHtml}</div>`;
+    }
+    const totalCells = startOffset + daysInMonth;
+    const trailing = (7 - (totalCells % 7)) % 7;
+    for(let i = 0; i < trailing; i++){
+      grid.innerHTML += `<div class="occ-day muted"></div>`;
+    }
+  }
+
+  /* ---------- Gün Detayı Modalı ---------- */
+  function openDayModal(iso){
+    const items = getAllVisitsFlat().filter(({visit}) => visit.date === iso);
+    document.getElementById('dayModalTitle').textContent = `🗓️ ${formatTRWithDay(iso)} — Gelecek Kişiler`;
+
+    const container = document.getElementById('dayModalList');
+    container.innerHTML = '';
+    if(items.length === 0){
+      container.innerHTML = '<p class="empty-state">Bu gün için kayıt yok.</p>';
+    } else {
+      items.forEach(({patient: p, visit: v}, idx) => {
+        const row = document.createElement('div');
+        row.className = 'day-row';
+        row.innerHTML = `
+          <div class="row-index">${idx + 1}</div>
+          <div class="day-row-name">${p.name}</div>
+          <a href="${telHrefFor(p.phone)}" class="phone-link-row">📞 ${formatPhoneDisplay(p.phone)}</a>
+          <button class="icon-btn icon-update" onclick="closeDayModal(); openVisitEditModal(${p.id}, ${v.id});" title="Güncelle">✏️</button>
+        `;
+        container.appendChild(row);
+      });
+    }
+    document.getElementById('dayModalOverlay').classList.add('open');
+  }
+  function closeDayModal(){
+    document.getElementById('dayModalOverlay').classList.remove('open');
+  }
+
+  function updateUpcomingBadge(countArg){
+    let count = countArg;
+    if(count === undefined){
+      const tomorrowISO = toISO(new Date(Date.now() + 86400000));
+      count = getAllVisitsFlat().filter(({visit}) => visit.date === tomorrowISO).length;
+    }
+    const badge = document.getElementById('upcomingBadge');
+    if(count > 0){
+      badge.textContent = count;
+      badge.classList.add('show');
+    } else {
+      badge.classList.remove('show');
+    }
+  }
+
+  /* ---------- Geçmiş Modalı (kişinin tüm randevu tarihleri) ---------- */
+  let currentHistoryPatientId = null;
+
+  function openHistoryModal(patientId){
+    currentHistoryPatientId = patientId;
+    renderHistoryModal();
+    document.getElementById('historyModalOverlay').classList.add('open');
+  }
+  function closeHistoryModal(){
+    document.getElementById('historyModalOverlay').classList.remove('open');
+    currentHistoryPatientId = null;
+  }
+  function renderHistoryModal(){
+    const p = getPatients().find(x => x.id === currentHistoryPatientId);
+    if(!p) return;
+    document.getElementById('historyModalTitle').textContent = `🩸 ${p.name} — Hacamat Geçmişi`;
+
+    const visitEntries = (p.visits || []).map(v => ({ type: 'visit', date: v.date, note: v.note, id: v.id }));
+    const sessionEntries = (p.sessions || []).map(s => ({ type: 'session', date: s.date, note: s.note, areas: s.areas, id: s.id }));
+    const entries = visitEntries.concat(sessionEntries).sort((a, b) => {
+      if(!a.date) return 1;
+      if(!b.date) return -1;
+      return b.date.localeCompare(a.date);
+    });
+
+    const container = document.getElementById('historyModalList');
+    container.innerHTML = '';
+    if(entries.length === 0){
+      container.innerHTML = '<p class="empty-state">Henüz kayıtlı randevu yok.</p>';
+      return;
+    }
+    entries.forEach(entry => {
+      const row = document.createElement('div');
+      row.className = 'visit-row';
+      if(entry.type === 'session'){
+        const areasHtml = (entry.areas || []).map(a => `<div class="session-area-line">• ${a.name} — <b>${a.cups}</b> kupa</div>`).join('');
+        row.innerHTML = `
+          <div class="visit-row-info">
+            <div class="visit-row-date">${entry.date ? formatTRWithDay(entry.date) : 'Tarih yok'} <span class="visit-type-badge session">✅ Tamamlandı</span></div>
+            <div class="session-areas">${areasHtml}</div>
+            ${entry.note ? `<div class="visit-row-note">📝 ${entry.note}</div>` : ''}
+          </div>
+          <button class="icon-btn icon-update" style="color:var(--crimson);" onclick="deleteSession(${currentHistoryPatientId}, ${entry.id})" title="Sil">🗑️</button>
+        `;
+      } else {
+        row.innerHTML = `
+          <div class="visit-row-info">
+            <div class="visit-row-date">${entry.date ? formatTRWithDay(entry.date) : 'Tarih girilmemiş'} <span class="visit-type-badge visit">🗓️ Randevu</span></div>
+            ${entry.note ? `<div class="visit-row-note">📝 ${entry.note}</div>` : ''}
+          </div>
+          <button class="icon-btn icon-update" onclick="openVisitEditModal(${currentHistoryPatientId}, ${entry.id})" title="Düzenle">✏️</button>
+        `;
+      }
+      container.appendChild(row);
+    });
+  }
+  let pendingSessionDelete = null; // { patientId, sessionId }
+  function deleteSession(patientId, sessionId){
+    pendingSessionDelete = { patientId, sessionId };
+    document.getElementById('sessionDeleteConfirmOverlay').classList.add('open');
+  }
+  function closeSessionDeleteConfirm(){
+    document.getElementById('sessionDeleteConfirmOverlay').classList.remove('open');
+    pendingSessionDelete = null;
+  }
+  function confirmSessionDelete(){
+    if(!pendingSessionDelete) return;
+    const { patientId, sessionId } = pendingSessionDelete;
+    let patients = getPatients();
+    patients = patients.map(p => {
+      if(p.id !== patientId) return p;
+      return { ...p, sessions: (p.sessions || []).filter(s => s.id !== sessionId) };
+    });
+    setPatients(patients);
+    closeSessionDeleteConfirm();
+    renderHistoryModal();
+  }
+
+  /* ---------- Randevu (Ziyaret) Ekle/Düzenle Mini Modalı ---------- */
+  let visitEditPatientId = null;
+  let visitEditVisitId = null; // null => yeni randevu ekleniyor
+
+  function openVisitEditModal(patientId, visitId){
+    // Geçmiş modalındaki "Yeni Randevu Ekle" butonu patientId göndermez, mevcut geçmiş kişisini kullan
+    visitEditPatientId = patientId || currentHistoryPatientId;
+    visitEditVisitId = (visitId === undefined) ? null : visitId;
+
+    let visit = null;
+    if(visitEditVisitId !== null){
+      const p = getPatients().find(x => x.id === visitEditPatientId);
+      visit = p ? (p.visits || []).find(v => v.id === visitEditVisitId) : null;
+    }
+    visitSelectedDate = visit ? (visit.date || null) : null;
+    dateModalContext = 'visit';
+    setTriggerDisplay('visitDateTrigger', 'visitDateTriggerText', visitSelectedDate);
+    document.getElementById('visitNote').value = visit ? (visit.note || '') : '';
+    document.getElementById('visitEditModalTitle').textContent = visitEditVisitId !== null ? 'Randevuyu Düzenle' : 'Yeni Randevu Ekle';
+    document.getElementById('visitDeleteBtn').style.display = visitEditVisitId !== null ? 'block' : 'none';
+
+    document.getElementById('historyModalOverlay').classList.remove('open');
+    document.getElementById('visitEditModalOverlay').classList.add('open');
+  }
+  function closeVisitEditModal(backToHistory){
+    document.getElementById('visitEditModalOverlay').classList.remove('open');
+    if(backToHistory && currentHistoryPatientId){
+      renderHistoryModal();
+      document.getElementById('historyModalOverlay').classList.add('open');
+    }
+  }
+  function saveVisitEdit(){
+    const note = document.getElementById('visitNote').value.trim();
+    let patients = getPatients();
+    patients = patients.map(p => {
+      if(p.id !== visitEditPatientId) return p;
+      let visits = (p.visits || []).slice();
+      if(visitEditVisitId !== null){
+        visits = visits.map(v => v.id === visitEditVisitId ? { ...v, date: visitSelectedDate || '', note } : v);
+      } else {
+        visits.push({ id: Date.now(), date: visitSelectedDate || '', note });
+      }
+      return { ...p, visits };
+    });
+    setPatients(patients);
+    closeVisitEditModal(true);
+    renderPatients();
+    updateUpcomingBadge();
+  }
+  function deleteVisitFromModal(){
+    if(visitEditVisitId === null) return;
+    let patients = getPatients();
+    patients = patients.map(p => {
+      if(p.id !== visitEditPatientId) return p;
+      return { ...p, visits: (p.visits || []).filter(v => v.id !== visitEditVisitId) };
+    });
+    setPatients(patients);
+    closeVisitEditModal(true);
+    renderPatients();
+    updateUpcomingBadge();
+  }
+
+  /* ---------- Tamamlanan Hacamat ---------- */
+  const HACAMAT_BOLGELERI = [
+    "İki kürek kemiği arası (Kahil)",
+    "Kürek kemiklerinin üstü ve yanları",
+    "Bel bölgesi",
+    "Kuyruk sokumu üstü",
+    "Kafa arkası ve kafa tepesi",
+    "Boyun arkası ve yanları",
+    "Omuz başları",
+    "Diz çevresi",
+    "Baldırlar",
+    "Bacak arkaları",
+    "Ayak bilekleri ve topuk üstü"
+  ];
+  let selectedAreaCups = {}; // { bölgeAdı: kupaSayısı }
+
+  function renderRegionChips(){
+    const container = document.getElementById('regionChipList');
+    if(!container) return;
+    container.innerHTML = HACAMAT_BOLGELERI.map(area => {
+      const active = Object.prototype.hasOwnProperty.call(selectedAreaCups, area);
+      const cups = active ? selectedAreaCups[area] : 1;
+      const safeArea = area.replace(/'/g, "\\'");
+      return `
+        <div class="region-chip ${active ? 'selected' : ''}">
+          <div class="region-chip-row" onclick="toggleAreaChip('${safeArea}')">
+            <span class="region-chip-check">${active ? '✅' : '◻️'}</span>
+            <span class="region-chip-label">${area}</span>
+          </div>
+          ${active ? `
+          <div class="region-chip-cups">
+            <label>Kaç kupa?</label>
+            <input type="number" min="1" class="cup-input" value="${cups}" onclick="event.stopPropagation()" oninput="updateAreaCups('${safeArea}', this.value)">
+          </div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+  function toggleAreaChip(area){
+    if(Object.prototype.hasOwnProperty.call(selectedAreaCups, area)) delete selectedAreaCups[area];
+    else selectedAreaCups[area] = 1;
+    renderRegionChips();
+  }
+  function updateAreaCups(area, value){
+    const n = parseInt(value, 10);
+    selectedAreaCups[area] = (n && n > 0) ? n : 1;
+  }
+
+  let completedSelectedPatientId = null;
+  function onCompletedNameInput(){
+    const nameEl = document.getElementById('completedName');
+    if(completedSelectedPatientId){
+      const p = getPatients().find(x => x.id === completedSelectedPatientId);
+      if(!p || p.name !== nameEl.value) clearSelectedCompletedPatient();
+    }
+    const query = nameEl.value.trim().toLocaleLowerCase('tr-TR');
+    const list = document.getElementById('completedNameSuggestions');
+    if(!query){
+      list.classList.remove('show');
+      list.innerHTML = '';
+      return;
+    }
+    const matches = getPatients()
+      .filter(p => p.name.toLocaleLowerCase('tr-TR').includes(query))
+      .slice(0, 6);
+    if(matches.length === 0){
+      list.innerHTML = '<div class="autocomplete-item" style="color:var(--ink-soft);">Kayıtlı kişi bulunamadı</div>';
+      list.classList.add('show');
+      return;
+    }
+    list.innerHTML = matches.map(p => `
+      <div class="autocomplete-item" onclick="selectCompletedPatient(${p.id})">
+        <div>${p.name}</div>
+        <div class="ac-phone">📞 ${formatPhoneDisplay(p.phone)}</div>
+      </div>
+    `).join('');
+    list.classList.add('show');
+  }
+  function selectCompletedPatient(id){
+    const p = getPatients().find(x => x.id === id);
+    if(!p) return;
+    completedSelectedPatientId = id;
+    document.getElementById('completedName').value = p.name;
+    document.getElementById('completedNameSuggestions').classList.remove('show');
+    document.getElementById('completedNameSuggestions').innerHTML = '';
+    const chip = document.getElementById('completedSelectedChip');
+    document.getElementById('completedSelectedChipText').textContent = `✅ ${p.name} seçildi`;
+    chip.classList.add('show');
+
+    // İsim seçilince hacamat yapılan tarih otomatik gelsin: kişinin en yakın/son randevu tarihi varsa onu, yoksa bugünü öner
+    const display = getDisplayVisitFor(p);
+    completedSelectedDate = display ? (display.visit.date || null) : toISO(new Date());
+    setTriggerDisplay('completedDateTrigger', 'completedDateTriggerText', completedSelectedDate);
+  }
+  function clearSelectedCompletedPatient(){
+    completedSelectedPatientId = null;
+    completedSelectedDate = null;
+    setTriggerDisplay('completedDateTrigger', 'completedDateTriggerText', null);
+    document.getElementById('completedSelectedChip').classList.remove('show');
+  }
+  function saveCompletedSession(){
+    if(!completedSelectedPatientId){
+      alert('Lütfen Ad Soyad kutusundan kayıtlı bir kişi seçin.');
+      return;
+    }
+    const areas = Object.keys(selectedAreaCups).map(name => ({ name, cups: selectedAreaCups[name] }));
+    if(areas.length === 0){
+      alert('Lütfen en az bir bölge seçin.');
+      return;
+    }
+    const note = document.getElementById('completedNote').value.trim();
+
+    let patients = getPatients();
+    patients = patients.map(p => {
+      if(p.id !== completedSelectedPatientId) return p;
+      const sessions = (p.sessions || []).slice();
+      sessions.push({ id: Date.now(), date: completedSelectedDate || toISO(new Date()), areas, note });
+      return { ...p, sessions };
+    });
+    setPatients(patients);
+
+    document.getElementById('completedName').value = '';
+    document.getElementById('completedNote').value = '';
+    clearSelectedCompletedPatient();
+    selectedAreaCups = {};
+    renderRegionChips();
+    showToast('✅ Tamamlanan hacamat kaydedildi!');
+  }
+
+  document.getElementById('dateModalOverlay').addEventListener('click', function(e){
+    if(e.target === this) closeDateModal();
+  });
+  document.getElementById('editModalOverlay').addEventListener('click', function(e){
+    if(e.target === this) closeEditModal();
+  });
+  document.getElementById('deleteConfirmOverlay').addEventListener('click', function(e){
+    if(e.target === this) closeDeleteConfirm();
+  });
+  document.getElementById('sessionDeleteConfirmOverlay').addEventListener('click', function(e){
+    if(e.target === this) closeSessionDeleteConfirm();
+  });
+  document.getElementById('dayModalOverlay').addEventListener('click', function(e){
+    if(e.target === this) closeDayModal();
+  });
+  document.getElementById('historyModalOverlay').addEventListener('click', function(e){
+    if(e.target === this) closeHistoryModal();
+  });
+  document.getElementById('visitEditModalOverlay').addEventListener('click', function(e){
+    if(e.target === this) closeVisitEditModal(true);
+  });
+
+  // Not: renderPatients()/updateUpcomingBadge()/renderRegionChips() artık burada değil —
+  // kullanıcı giriş yapıp Firestore verisi yüklendiğinde loadPatientsFromFirestore() içinden çağrılıyor.
+</script>
+
+</body>
+</html>
