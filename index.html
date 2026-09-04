@@ -237,6 +237,7 @@
   }
   .visit-type-badge.session{ background:rgba(35,178,109,0.18); color:var(--green); }
   .visit-type-badge.visit{ background:rgba(77,163,255,0.18); color:var(--blue); }
+  .visit-type-badge.cancelled{ background:rgba(154,161,176,0.18); color:var(--ink-soft); text-decoration:line-through; }
   .session-areas{ margin-top:4px; }
   .session-area-line{ font-size:0.75rem; color:var(--ink-soft); line-height:1.5; }
 
@@ -386,6 +387,7 @@
     display:flex; align-items:center; gap:10px;
     padding:10px 4px;
     border-bottom:1px solid rgba(255,255,255,0.06);
+    cursor:pointer;
   }
   .upcoming-row:last-child{ border-bottom:none; }
   .upcoming-name{
@@ -501,17 +503,53 @@
   #loginScreen{
     position:fixed; inset:0; z-index:500;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:22px; padding:24px;
-    background:radial-gradient(circle at 50% 20%, #22252d, var(--bg-deep) 70%);
+    padding:24px;
+    background:
+      radial-gradient(circle at 14% 18%, rgba(216,57,90,0.20), transparent 40%),
+      radial-gradient(circle at 88% 82%, rgba(156,23,48,0.28), transparent 45%),
+      repeating-radial-gradient(circle at 84% 12%, rgba(255,255,255,0.045) 0px, rgba(255,255,255,0.045) 1.2px, transparent 1.2px, transparent 22px),
+      repeating-radial-gradient(circle at 6% 88%, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1.2px, transparent 1.2px, transparent 30px),
+      linear-gradient(165deg, #21242c, var(--bg-deep) 70%);
     text-align:center;
+    overflow:hidden;
   }
-  #loginScreen .login-logo{ font-size:3rem; }
-  #loginScreen h1{ font-size:1.25rem; font-weight:700; color:var(--ink); }
-  #loginScreen p{ font-size:0.85rem; color:var(--ink-soft); max-width:280px; line-height:1.5; }
+  #loginScreen::before{
+    content:"";
+    position:absolute; inset:0; pointer-events:none; opacity:0.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+  .login-card{
+    position:relative; z-index:1;
+    width:100%; max-width:330px;
+    padding:38px 26px 30px;
+    border-radius:24px;
+    display:flex; flex-direction:column; align-items:center; gap:16px;
+  }
+  .cup-mark{
+    position:relative; width:96px; height:96px;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:4px;
+  }
+  .cup-mark::after{
+    content:"";
+    position:absolute; inset:-14px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(216,57,90,0.35), transparent 70%);
+    filter:blur(6px);
+    animation:cupPulse 3.2s ease-in-out infinite;
+  }
+  .cup-mark svg{ position:relative; z-index:1; }
+  @keyframes cupPulse{
+    0%, 100%{ opacity:0.55; transform:scale(0.94); }
+    50%{ opacity:1; transform:scale(1.04); }
+  }
+  #loginScreen h1{ font-size:1.3rem; font-weight:700; color:var(--ink); letter-spacing:-0.01em; }
+  #loginScreen p{ font-size:0.83rem; color:var(--ink-soft); max-width:270px; line-height:1.55; margin-top:2px; }
   .google-btn{
     display:flex; align-items:center; justify-content:center; gap:10px;
-    padding:13px 22px; border:none; border-radius:14px; cursor:pointer;
-    background:linear-gradient(160deg,#22252d,#191b21);
+    width:100%; padding:14px 22px; border:none; border-radius:14px; cursor:pointer;
+    margin-top:10px;
+    background:linear-gradient(160deg,#262a34,#191b21);
     box-shadow: 4px 4px 10px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
     color:var(--ink); font-size:0.92rem; font-weight:700;
   }
@@ -520,10 +558,10 @@
   #loginStatus{ font-size:0.8rem; color:var(--ink-soft); min-height:18px; }
   #appRoot{ display:none; }
   .user-bar{
-    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    display:flex; align-items:center; justify-content:flex-end; gap:10px;
     margin-bottom:14px; padding:8px 12px;
   }
-  .user-bar-info{ display:flex; align-items:center; gap:8px; min-width:0; }
+  .user-bar-info{ display:none; }
   .user-bar-avatar{ width:28px; height:28px; border-radius:50%; flex:0 0 auto; }
   .user-bar-email{ font-size:0.72rem; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .logout-btn{
@@ -538,14 +576,29 @@
 
 <!-- Giriş Ekranı (Google ile Giriş) -->
 <div id="loginScreen">
-  <div class="login-logo">🩸</div>
-  <h1>Hacamat Müşteri Takip</h1>
-  <p>Verileriniz Google hesabınıza bağlı olarak güvenle saklanır. Devam etmek için Google ile giriş yapın.</p>
-  <button class="google-btn" id="googleSignInBtn" onclick="signInWithGoogle()">
-    <svg class="g-icon" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
-    Google ile Giriş Yap
-  </button>
-  <div id="loginStatus"></div>
+  <div class="login-card">
+    <div class="cup-mark">
+      <svg width="88" height="88" viewBox="0 0 88 88">
+        <defs>
+          <radialGradient id="cupGlass" cx="35%" cy="28%" r="75%">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.30)"/>
+            <stop offset="45%" stop-color="rgba(216,57,90,0.22)"/>
+            <stop offset="100%" stop-color="rgba(156,23,48,0.06)"/>
+          </radialGradient>
+        </defs>
+        <circle cx="44" cy="44" r="40" fill="url(#cupGlass)" stroke="rgba(216,57,90,0.55)" stroke-width="1.6"/>
+        <ellipse cx="32" cy="27" rx="11" ry="6.5" fill="rgba(255,255,255,0.22)"/>
+      </svg>
+      <span style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:2.1rem;">🩸</span>
+    </div>
+    <h1>Hacamat Müşteri Takip</h1>
+    <p>Verileriniz Google hesabınıza bağlı olarak güvenle saklanır. Devam etmek için Google ile giriş yapın.</p>
+    <button class="google-btn" id="googleSignInBtn" onclick="signInWithGoogle()">
+      <svg class="g-icon" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+      Google ile Giriş Yap
+    </button>
+    <div id="loginStatus"></div>
+  </div>
 </div>
 
 <div id="appRoot">
@@ -789,6 +842,20 @@
     <div class="modal-actions">
       <button class="modal-btn today-btn" style="color:var(--crimson);" id="visitDeleteBtn" onclick="deleteVisitFromModal()">🗑️ Sil</button>
       <button class="modal-btn confirm-btn" onclick="saveVisitEdit()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Yaklaşan Randevu Aksiyon Modalı -->
+<div class="modal-overlay" id="upcomingActionOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2 style="font-size:1rem; font-weight:700; text-align:center; margin-bottom:4px; color:var(--ink);" id="upcomingActionTitle">Randevu</h2>
+    <p style="font-size:0.8rem; text-align:center; color:var(--ink-soft); margin-bottom:14px;">Bu randevu için ne yapmak istersiniz?</p>
+    <div class="modal-actions" style="flex-direction:column; gap:10px;">
+      <button class="modal-btn confirm-btn" style="width:100%; background:linear-gradient(160deg, var(--green), var(--green-deep));" onclick="markUpcomingCompleted()">✅ Tamamlandı olarak işaretle</button>
+      <button class="modal-btn today-btn" style="width:100%; color:var(--crimson);" onclick="cancelUpcomingVisit()">❌ İptal Et</button>
+      <button class="modal-btn today-btn" style="width:100%;" onclick="closeUpcomingAction()">Vazgeç</button>
     </div>
   </div>
 </div>
@@ -1079,7 +1146,7 @@
   function getAllVisitsFlat(){
     const flat = [];
     getPatients().forEach(p => {
-      (p.visits || []).forEach(v => flat.push({ patient: p, visit: v }));
+      (p.visits || []).forEach(v => { if(v.status !== 'cancelled') flat.push({ patient: p, visit: v }); });
     });
     return flat;
   }
@@ -1094,7 +1161,7 @@
   /* Bir kişi için satırda gösterilecek en uygun randevu: sıradaki (bugün dahil gelecek) yoksa en son geçmiş */
   function getDisplayVisitFor(patient){
     const todayISO = toISO(new Date());
-    const visits = (patient.visits || []).filter(v => v.date);
+    const visits = (patient.visits || []).filter(v => v.date && v.status !== 'cancelled');
     if(visits.length === 0) return null;
     const upcoming = visits.filter(v => v.date >= todayISO).sort((a,b) => a.date.localeCompare(b.date));
     if(upcoming.length > 0) return { visit: upcoming[0], label: 'Sıradaki' };
@@ -1383,18 +1450,56 @@
       updateUpcomingBadge(0);
       return;
     }
-    list.forEach(({patient: p}, idx) => {
+    list.forEach(({patient: p, visit: v}, idx) => {
       const row = document.createElement('div');
       row.className = 'upcoming-row';
+      row.onclick = () => openUpcomingAction(p.id, v.id);
       row.innerHTML = `
         <div class="row-index">${idx + 1}</div>
         <div class="upcoming-name">🩸 ${p.name}</div>
-        <a href="${telHrefFor(p.phone)}" class="icon-btn icon-update" title="${formatPhoneDisplay(p.phone)}">📞</a>
-        <a href="${waLinkFor(p)}" target="_blank" class="icon-btn icon-wa" title="Konum Gönder">📍</a>
+        <a href="${telHrefFor(p.phone)}" class="icon-btn icon-update" title="${formatPhoneDisplay(p.phone)}" onclick="event.stopPropagation()">📞</a>
+        <a href="${waLinkFor(p)}" target="_blank" class="icon-btn icon-wa" title="Konum Gönder" onclick="event.stopPropagation()">📍</a>
       `;
       container.appendChild(row);
     });
     updateUpcomingBadge(list.length);
+  }
+
+  /* ---- Yaklaşan randevu aksiyon modalı (Tamamlandı / İptal Et) ---- */
+  let pendingUpcomingAction = null; // { patientId, visitId }
+  function openUpcomingAction(patientId, visitId){
+    pendingUpcomingAction = { patientId, visitId };
+    const p = getPatients().find(x => x.id === patientId);
+    document.getElementById('upcomingActionTitle').textContent = p ? `🩸 ${p.name}` : 'Randevu';
+    document.getElementById('upcomingActionOverlay').classList.add('open');
+  }
+  function closeUpcomingAction(){
+    document.getElementById('upcomingActionOverlay').classList.remove('open');
+    pendingUpcomingAction = null;
+  }
+  function markUpcomingCompleted(){
+    if(!pendingUpcomingAction) return;
+    const { patientId, visitId } = pendingUpcomingAction;
+    // Tamamlanan Hacamat formunu bu kişi seçili şekilde açar; kaydedince randevu otomatik silinir
+    pendingCompleteFromVisit = { patientId, visitId };
+    closeUpcomingAction();
+    switchTab('completed');
+    selectCompletedPatient(patientId);
+  }
+  function cancelUpcomingVisit(){
+    if(!pendingUpcomingAction) return;
+    const { patientId, visitId } = pendingUpcomingAction;
+    let patients = getPatients();
+    patients = patients.map(p => {
+      if(p.id !== patientId) return p;
+      const visits = (p.visits || []).map(v => v.id === visitId ? { ...v, status: 'cancelled' } : v);
+      return { ...p, visits };
+    });
+    setPatients(patients);
+    closeUpcomingAction();
+    renderUpcoming();
+    updateUpcomingBadge();
+    showToast('❌ Randevu iptal edildi');
   }
 
   /* ---------- Takvim Doluluk Oranı ---------- */
@@ -1506,7 +1611,7 @@
     if(!p) return;
     document.getElementById('historyModalTitle').textContent = `🩸 ${p.name} — Hacamat Geçmişi`;
 
-    const visitEntries = (p.visits || []).map(v => ({ type: 'visit', date: v.date, note: v.note, id: v.id }));
+    const visitEntries = (p.visits || []).map(v => ({ type: 'visit', date: v.date, note: v.note, id: v.id, status: v.status }));
     const sessionEntries = (p.sessions || []).map(s => ({ type: 'session', date: s.date, note: s.note, areas: s.areas, id: s.id }));
     const entries = visitEntries.concat(sessionEntries).sort((a, b) => {
       if(!a.date) return 1;
@@ -1534,9 +1639,13 @@
           <button class="icon-btn icon-update" style="color:var(--crimson);" onclick="deleteSession(${currentHistoryPatientId}, ${entry.id})" title="Sil">🗑️</button>
         `;
       } else {
+        const isCancelled = entry.status === 'cancelled';
+        const badge = isCancelled
+          ? '<span class="visit-type-badge cancelled">❌ İptal Edildi</span>'
+          : '<span class="visit-type-badge visit">🗓️ Randevu</span>';
         row.innerHTML = `
           <div class="visit-row-info">
-            <div class="visit-row-date">${entry.date ? formatTRWithDay(entry.date) : 'Tarih girilmemiş'} <span class="visit-type-badge visit">🗓️ Randevu</span></div>
+            <div class="visit-row-date">${entry.date ? formatTRWithDay(entry.date) : 'Tarih girilmemiş'} ${badge}</div>
             ${entry.note ? `<div class="visit-row-note">📝 ${entry.note}</div>` : ''}
           </div>
           <button class="icon-btn icon-update" onclick="openVisitEditModal(${currentHistoryPatientId}, ${entry.id})" title="Düzenle">✏️</button>
@@ -1678,6 +1787,7 @@
   }
 
   let completedSelectedPatientId = null;
+  let pendingCompleteFromVisit = null; // { patientId, visitId } — Yaklaşan'dan "Tamamlandı" ile geldiyse, kayıttan sonra bu randevu silinir
   function onCompletedNameInput(){
     const nameEl = document.getElementById('completedName');
     if(completedSelectedPatientId){
@@ -1726,6 +1836,7 @@
   function clearSelectedCompletedPatient(){
     completedSelectedPatientId = null;
     completedSelectedDate = null;
+    pendingCompleteFromVisit = null;
     setTriggerDisplay('completedDateTrigger', 'completedDateTriggerText', null);
     document.getElementById('completedSelectedChip').classList.remove('show');
   }
@@ -1740,21 +1851,28 @@
       return;
     }
     const note = document.getElementById('completedNote').value.trim();
+    const consumeVisit = (pendingCompleteFromVisit && pendingCompleteFromVisit.patientId === completedSelectedPatientId)
+      ? pendingCompleteFromVisit.visitId
+      : null;
 
     let patients = getPatients();
     patients = patients.map(p => {
       if(p.id !== completedSelectedPatientId) return p;
       const sessions = (p.sessions || []).slice();
       sessions.push({ id: Date.now(), date: completedSelectedDate || toISO(new Date()), areas, note });
-      return { ...p, sessions };
+      // Yaklaşan'dan "Tamamlandı" olarak işaretlendiyse, o randevu artık tamamlandığı için kaldırılır
+      const visits = consumeVisit !== null ? (p.visits || []).filter(v => v.id !== consumeVisit) : p.visits;
+      return { ...p, sessions, visits };
     });
     setPatients(patients);
+    pendingCompleteFromVisit = null;
 
     document.getElementById('completedName').value = '';
     document.getElementById('completedNote').value = '';
     clearSelectedCompletedPatient();
     selectedAreaCups = {};
     renderRegionChips();
+    updateUpcomingBadge();
     showToast('✅ Tamamlanan hacamat kaydedildi!');
   }
 
@@ -1778,6 +1896,9 @@
   });
   document.getElementById('visitEditModalOverlay').addEventListener('click', function(e){
     if(e.target === this) closeVisitEditModal(true);
+  });
+  document.getElementById('upcomingActionOverlay').addEventListener('click', function(e){
+    if(e.target === this) closeUpcomingAction();
   });
 
   // Not: renderPatients()/updateUpcomingBadge()/renderRegionChips() artık burada değil —
