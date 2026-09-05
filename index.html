@@ -441,8 +441,8 @@
 
   /* ---- Yaklaşanlar: tek satır (excel gibi) görünümü ---- */
   .upcoming-row{
-    display:flex; align-items:center; gap:10px;
-    padding:10px 4px;
+    display:flex; align-items:center; gap:8px;
+    padding:6px 4px;
     border-bottom:1px solid rgba(255,255,255,0.06);
     cursor:pointer;
   }
@@ -450,6 +450,10 @@
   .upcoming-info{ flex:1; min-width:0; }
   .upcoming-top{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
   .upcoming-date{ font-size:0.72rem; font-weight:700; color:var(--crimson); flex:0 0 auto; }
+  .upcoming-daysleft{
+    flex:0 0 auto; font-size:0.62rem; font-weight:800; color:#fff;
+    padding:2px 8px; border-radius:9px; white-space:nowrap;
+  }
   .upcoming-name{
     font-weight:700; font-size:0.9rem; color:var(--ink);
     white-space:normal; word-break:break-word; line-height:1.25;
@@ -1572,8 +1576,10 @@
     const range = (maxDiff - minDiff) || 1;
 
     list.forEach(({patient: p, visit: v}, idx) => {
-      const t = (diffDays({visit: v}) - minDiff) / range; // 0 = en yakın, 1 = en uzak
+      const dLeft = diffDays({visit: v});
+      const t = (dLeft - minDiff) / range; // 0 = en yakın, 1 = en uzak
       const color = lerpColor('#d8395a', '#4da3ff', t); // kırmızı -> mavi
+      const daysLeftText = dLeft === 0 ? 'Bugün' : (dLeft === 1 ? '1 gün kaldı' : `${dLeft} gün kaldı`);
       const row = document.createElement('div');
       row.className = 'upcoming-row';
       row.onclick = () => openUpcomingAction(p.id, v.id);
@@ -1586,6 +1592,7 @@
           </div>
           ${v.note ? `<div class="upcoming-note">📝 ${v.note}</div>` : ''}
         </div>
+        <span class="upcoming-daysleft" style="background:${color};">${daysLeftText}</span>
       `;
       container.appendChild(row);
     });
