@@ -1599,27 +1599,57 @@
     else if(digits.length > 10) digits = digits.slice(-10);
     return '0' + digits.slice(0, 10);
   }
+  // Rehberden çoklu kişi seçip (tek tek işaretleyerek veya "tümünü seç" ile) doğrudan
+  // Kayıtlı Kişiler'e ekliyor — form/tarih gerekmiyor, sadece isim+telefon kaydediliyor.
   function importFromContacts(){
     if(!('contacts' in navigator) || !('ContactsManager' in window)){
       alert('Bu özellik sadece Android + Chrome tarayıcısında çalışıyor. Bu cihaz/tarayıcı rehber erişimini desteklemiyor.');
       return;
     }
-    navigator.contacts.select(['name', 'tel'], { multiple: false }).then(selected => {
-      if(!selected || selected.length === 0) return;
-      const c = selected[0];
-      const name = (c.name && c.name[0]) ? c.name[0] : '';
-      const tel = (c.tel && c.tel[0]) ? c.tel[0] : '';
-      clearSelectedPatient();
-      switchTab('new');
-      const nameEl = document.getElementById('name');
-      const phoneEl = document.getElementById('phone');
-      nameEl.value = name;
-      toUpperLastWord('name');
-      if(tel){
-        phoneEl.value = normalizeContactPhone(tel);
-        formatPhoneInput(phoneEl);
+    // multiple:true → rehber ekranında kişiler tek tek işaretlenebilir veya "tümünü seç" ile hepsi birden aktarılabilir
+    navigator.contacts.select(['name', 'tel'], { multiple: true }).then(selectedList => {
+      if(!selectedList || selectedList.length === 0) return;
+
+      let patients = getPatients();
+      const existingPhones = new Set(patients.map(p => p.phone));
+
+      let addedCount = 0;
+      let skippedCount = 0;
+      const newPatients = [];
+
+      selectedList.forEach(c => {
+        const name = (c.name && c.name[0]) ? c.name[0].trim() : '';
+        const rawTel = (c.tel && c.tel[0]) ? c.tel[0] : '';
+        if(!name || !rawTel) { skippedCount++; return; }
+        const phone = normalizeContactPhone(rawTel);
+        if(existingPhones.has(phone)) { skippedCount++; return; } // aynı numara zaten kayıtlıysa tekrar eklenmez
+
+        existingPhones.add(phone);
+        newPatients.push({
+          id: Date.now() + addedCount, // aynı milisaniyede çakışmasın diye artırılıyor
+          name: name,
+          phone: phone,
+          note: '',
+          createdDate: new Date().toLocaleDateString('tr-TR'),
+          visits: []
+        });
+        addedCount++;
+      });
+
+      if(newPatients.length > 0){
+        patients = [...newPatients, ...patients];
+        setPatients(patients);
       }
-      showToast('📇 Rehberden dolduruldu — tarihi seçip kaydet');
+
+      switchTab('list');
+      renderPatients();
+      updateUpcomingBadge();
+
+      if(addedCount === 0){
+        showToast(skippedCount > 0 ? '📇 Seçilenler zaten kayıtlıydı' : '📇 Kişi seçilmedi');
+      } else {
+        showToast(`📇 ${addedCount} kişi Kayıtlı Kişiler'e eklendi${skippedCount > 0 ? ` (${skippedCount} zaten kayıtlıydı)` : ''}`);
+      }
     }).catch(err => {
       if(err && err.name !== 'AbortError') console.error('Rehber okunamadı', err);
     });
