@@ -623,14 +623,9 @@
     text-align:center;
     overflow:hidden;
   }
-  #loginScreen::before{
-    content:"";
-    position:absolute; inset:0; pointer-events:none;
-    background:radial-gradient(ellipse 60% 20% at 50% 66%, rgba(0,0,0,0.55) 0%, transparent 75%);
-  }
   .login-card{
     position:absolute; z-index:1;
-    top:62%; left:50%; transform:translateX(-50%);
+    top:43%; left:50%; transform:translateX(-50%);
     width:88%; max-width:330px;
     padding:14px 22px;
     border-radius:20px;
@@ -640,11 +635,13 @@
     display:flex; align-items:center; justify-content:center; gap:10px;
     width:100%; padding:14px 22px; border:none; border-radius:14px; cursor:pointer;
     margin-top:8px;
-    background:linear-gradient(160deg,#363a46,#282b33);
-    box-shadow: 4px 4px 10px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
-    color:var(--ink); font-size:0.92rem; font-weight:700;
+    background:rgba(255,255,255,0.72);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18), inset 0 0 0 1px rgba(255,255,255,0.5);
+    color:#3d372f; font-size:0.92rem; font-weight:700;
   }
-  .google-btn:active{ transform:translateY(1px); box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light); }
+  .google-btn:active{ transform:translateY(1px); background:rgba(255,255,255,0.85); }
   .google-btn .g-icon{ width:20px; height:20px; }
   #loginStatus{ font-size:0.8rem; color:var(--ink-soft); min-height:18px; }
   .login-ornament{
@@ -676,7 +673,7 @@
 </head>
 <body>
 
-<div class="today-date-bar" id="todayDateBar"></div>
+<div class="today-date-bar" id="todayDateBar" style="display:none;"></div>
 <script>
   (function(){
     var GUN=["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
@@ -1143,12 +1140,14 @@
     if(user){
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appRoot').style.display = 'block';
+      document.getElementById('todayDateBar').style.display = 'block';
       document.getElementById('userEmail').textContent = user.email || '';
       document.getElementById('userAvatar').src = user.photoURL || '';
       migrateLocalDataIfNeeded().then(loadPatientsFromFirestore);
     } else {
       document.getElementById('loginScreen').style.display = 'flex';
       document.getElementById('appRoot').style.display = 'none';
+      document.getElementById('todayDateBar').style.display = 'none';
       document.getElementById('loginStatus').textContent = '';
       cachedPatients = [];
     }
