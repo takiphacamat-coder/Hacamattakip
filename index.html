@@ -516,6 +516,7 @@
   #dateModalOverlay{ z-index:200; }
   #editModalOverlay{ z-index:100; }
   #deleteConfirmOverlay{ z-index:250; }
+  #logoutConfirmOverlay{ z-index:250; }
   #sessionDeleteConfirmOverlay{ z-index:250; }
 
   .modal-sheet{
@@ -704,7 +705,9 @@
       <button class="tab-btn" id="tabBtnUpcoming" onclick="switchTab('upcoming')">⏰ Yaklaşan<span class="tab-badge" id="upcomingBadge">0</span></button>
       <button class="tab-btn" id="tabBtnOccupancy" onclick="switchTab('occupancy')">📆 Randevu Takvimi</button>
     </div>
-    <button class="logout-btn" onclick="signOutUser()" aria-label="Çıkış Yap" title="Çıkış Yap">🚪</button>
+    <button class="logout-btn" onclick="openLogoutConfirm()" aria-label="Çıkış Yap" title="Çıkış Yap">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </button>
   </div>
   <!-- Not: "Tamamlanan" artık ayrı bir sekme değil. Yaklaşan'dan
        "Tamamlandı olarak işaretle" ile artık doğrudan modern bir modal açılıyor
@@ -879,6 +882,20 @@
     <div class="modal-actions">
       <button class="modal-btn today-btn" onclick="closeDeleteConfirm()">Vazgeç</button>
       <button class="modal-btn confirm-btn" style="background:linear-gradient(160deg, var(--crimson), var(--crimson-deep));" onclick="confirmDelete()">🗑️ Sil</button>
+    </div>
+  </div>
+</div>
+
+<!-- Çıkış Onay Modalı -->
+<div class="modal-overlay" id="logoutConfirmOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="confirm-icon">🚪</div>
+    <h2 style="font-size:1rem; font-weight:700; text-align:center; margin-bottom:6px; color:var(--ink);">Çıkış Yap</h2>
+    <p style="font-size:0.85rem; text-align:center; color:var(--ink-soft); margin-bottom:4px;">Hesabınızdan çıkış yapmak istediğinize emin misiniz?</p>
+    <div class="modal-actions">
+      <button class="modal-btn today-btn" onclick="closeLogoutConfirm()">Vazgeç</button>
+      <button class="modal-btn confirm-btn" style="background:linear-gradient(160deg, var(--crimson), var(--crimson-deep));" onclick="confirmLogout()">Çıkış Yap</button>
     </div>
   </div>
 </div>
@@ -1058,6 +1075,16 @@
   }
   function signOutUser(){
     auth.signOut();
+  }
+  function openLogoutConfirm(){
+    document.getElementById('logoutConfirmOverlay').classList.add('open');
+  }
+  function closeLogoutConfirm(){
+    document.getElementById('logoutConfirmOverlay').classList.remove('open');
+  }
+  function confirmLogout(){
+    closeLogoutConfirm();
+    signOutUser();
   }
 
   function userDocRef(){
@@ -2274,6 +2301,9 @@
   });
   document.getElementById('deleteConfirmOverlay').addEventListener('click', function(e){
     if(e.target === this) closeDeleteConfirm();
+  });
+  document.getElementById('logoutConfirmOverlay').addEventListener('click', function(e){
+    if(e.target === this) closeLogoutConfirm();
   });
   document.getElementById('sessionDeleteConfirmOverlay').addEventListener('click', function(e){
     if(e.target === this) closeSessionDeleteConfirm();
