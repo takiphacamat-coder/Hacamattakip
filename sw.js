@@ -10,6 +10,9 @@ const CACHE_NAME = 'hacamat-app-shell-v1';
 // Sayfanın kendisi + çalışması için şart olan dış scriptler (Firebase SDK)
 const APP_SHELL_URLS = [
   self.registration.scope, // ana sayfa (index.html)
+  new URL('./manifest.json', self.registration.scope).href,
+  new URL('./icon-192.png', self.registration.scope).href,
+  new URL('./icon-512.png', self.registration.scope).href,
   'https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js',
   'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js'
