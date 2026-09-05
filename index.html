@@ -54,7 +54,7 @@
   /* ---- Sekme geçişi ---- */
   .tabbar{
     display:grid;
-    grid-template-columns:repeat(4,1fr);
+    grid-template-columns:repeat(5,1fr);
     gap:6px;
     padding:5px;
     margin-bottom:16px;
@@ -747,7 +747,7 @@
       <button class="tab-btn" id="tabBtnList" onclick="switchTab('list')">📋 Kayıtlı Kişiler</button>
       <button class="tab-btn" id="tabBtnUpcoming" onclick="switchTab('upcoming')">⏰ Yaklaşan<span class="tab-badge" id="upcomingBadge">0</span></button>
       <button class="tab-btn" id="tabBtnOccupancy" onclick="switchTab('occupancy')">📆 Randevu Takvimi</button>
-      <button class="tab-btn" id="tabBtnSettings" onclick="openSettingsModal()">⚙️ Ayarlar</button>
+      <button class="tab-btn" id="tabBtnSettings" onclick="openSettingsModal()" title="Ayarlar" style="font-size:1.05rem;">⚙️</button>
     </div>
   </div>
   <!-- Not: "Tamamlanan" artık ayrı bir sekme değil. Yaklaşan'dan
