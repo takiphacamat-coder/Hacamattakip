@@ -207,26 +207,40 @@
     background:var(--input-bg); border-radius:8px; padding:2px 7px; margin-left:6px;
   }
 
-  /* Tamamlanan Hacamat: bölge seçim listesi */
-  .region-chip-list{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+  /* Tamamlanan Hacamat: bölge seçim kutuları (grid) */
+  .region-chip-list{ display:flex; flex-wrap:wrap; gap:9px; margin-top:8px; }
   .region-chip{
-    border-radius:12px;
+    position:relative;
+    flex:0 0 auto;
+    min-width:96px;
+    padding:12px 10px;
+    border-radius:14px;
     background:var(--input-bg);
     box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
-    overflow:hidden;
+    text-align:center;
+    cursor:pointer;
   }
-  .region-chip.selected{ box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light), 0 0 0 1.5px rgba(35,178,109,0.55); }
-  .region-chip-row{
-    display:flex; align-items:center; gap:10px;
-    padding:11px 12px; cursor:pointer;
+  .region-chip.selected{
+    background:linear-gradient(160deg,#1f3a2c,#16281f);
+    box-shadow: 0 0 0 1.5px rgba(35,178,109,0.55), 3px 3px 8px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
   }
-  .region-chip-check{ font-size:0.95rem; flex:0 0 auto; }
-  .region-chip-label{ font-size:0.85rem; color:var(--ink); flex:1; }
-  .region-chip-cups{
-    display:flex; align-items:center; gap:8px;
-    padding:0 12px 12px 36px;
+  .region-chip-label{ font-size:0.78rem; color:var(--ink); line-height:1.25; display:block; }
+  .region-chip.selected .region-chip-label{ color:var(--green); font-weight:700; }
+  .region-chip-cupbadge{
+    position:absolute; top:-7px; right:-7px;
+    min-width:20px; height:20px; padding:0 4px;
+    border-radius:10px; background:var(--crimson); color:#fff;
+    font-size:0.68rem; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 2px var(--bg);
   }
-  .region-chip-cups label{ margin:0; font-size:0.72rem; }
+  .region-chip-remove{
+    position:absolute; top:-7px; left:-7px;
+    width:18px; height:18px; border-radius:50%;
+    background:#3a3f4a; color:#fff; font-size:0.6rem; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 2px var(--bg);
+  }
   .cup-input{
     width:70px; padding:8px 10px; border:none; border-radius:10px; font-size:0.9rem; outline:none;
     background:var(--bg-deep);
@@ -763,10 +777,6 @@
         <input type="text" id="completedName" autocomplete="off" oninput="onCompletedNameInput()" onblur="setTimeout(function(){ document.getElementById('completedNameSuggestions').classList.remove('show'); }, 180)">
         <div class="autocomplete-list" id="completedNameSuggestions"></div>
       </div>
-      <div class="selected-person-chip" id="completedSelectedChip">
-        <span id="completedSelectedChipText">✅ Kişi seçildi</span>
-        <button type="button" class="chip-clear" onclick="clearSelectedCompletedPatient()">✕</button>
-      </div>
 
       <label for="completedDateTrigger">Hacamat Yapılan Tarih</label>
       <div class="date-trigger" id="completedDateTrigger" onclick="openDateModal('completed')">
@@ -774,7 +784,7 @@
         <span class="cal-icon">📅</span>
       </div>
 
-      <label>Uygulanan Bölgeler</label>
+      <label style="text-transform:uppercase; color:var(--crimson);">Uygulanan Bölgeler</label>
       <div class="region-chip-list" id="regionChipList"></div>
 
       <label for="completedNote">Özel Not (varsa)</label>
@@ -1896,16 +1906,10 @@
       const cups = active ? selectedAreaCups[area] : 1;
       const safeArea = area.replace(/'/g, "\\'");
       return `
-        <div class="region-chip ${active ? 'selected' : ''}">
-          <div class="region-chip-row" onclick="onRegionRowClick('${safeArea}')">
-            <span class="region-chip-check" onclick="event.stopPropagation(); toggleAreaChip('${safeArea}')">${active ? '✅' : '◻️'}</span>
-            <span class="region-chip-label">${area}</span>
-          </div>
-          ${active ? `
-          <div class="region-chip-cups">
-            <label>Kaç kupa?</label>
-            <div class="cup-display" onclick="event.stopPropagation(); openCupKeypad('${safeArea}')">${cups}</div>
-          </div>` : ''}
+        <div class="region-chip ${active ? 'selected' : ''}" onclick="onRegionRowClick('${safeArea}')">
+          ${active ? `<span class="region-chip-remove" onclick="event.stopPropagation(); toggleAreaChip('${safeArea}')">✕</span>` : ''}
+          ${active ? `<span class="region-chip-cupbadge">${cups}</span>` : ''}
+          <span class="region-chip-label">${area}</span>
         </div>
       `;
     }).join('');
@@ -1996,9 +2000,6 @@
     document.getElementById('completedName').value = p.name;
     document.getElementById('completedNameSuggestions').classList.remove('show');
     document.getElementById('completedNameSuggestions').innerHTML = '';
-    const chip = document.getElementById('completedSelectedChip');
-    document.getElementById('completedSelectedChipText').textContent = `✅ ${p.name} seçildi`;
-    chip.classList.add('show');
 
     // İsim seçilince hacamat yapılan tarih otomatik gelsin: kişinin en yakın/son randevu tarihi varsa onu, yoksa bugünü öner
     const display = getDisplayVisitFor(p);
@@ -2010,7 +2011,6 @@
     completedSelectedDate = null;
     pendingCompleteFromVisit = null;
     setTriggerDisplay('completedDateTrigger', 'completedDateTriggerText', null);
-    document.getElementById('completedSelectedChip').classList.remove('show');
   }
   function saveCompletedSession(){
     if(!completedSelectedPatientId){
