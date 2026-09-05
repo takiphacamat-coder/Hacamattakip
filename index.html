@@ -166,9 +166,18 @@
     border-radius:12px;
     background:var(--input-bg);
     box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
-    overflow:hidden;
+    max-height:260px;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
   }
   .autocomplete-list.show{ display:block; }
+  .autocomplete-count{
+    position:sticky; top:0;
+    padding:8px 14px; font-size:0.72rem; font-weight:800; color:var(--crimson);
+    background:var(--input-bg);
+    border-bottom:1px solid rgba(0,0,0,0.1);
+    letter-spacing:0.01em;
+  }
   .autocomplete-item{
     padding:10px 14px; font-size:0.88rem; color:var(--ink); cursor:pointer;
     border-bottom:1px solid rgba(0,0,0,0.07);
@@ -335,11 +344,11 @@
 
   /* ---- Kayıtlı kişiler: satır (liste) görünümü ---- */
   .patient-row{
-    display:flex; align-items:center; gap:10px;
     padding:12px 12px; margin-bottom:10px;
   }
+  .patient-row-top{ display:flex; align-items:flex-start; gap:10px; }
   .patient-row .icon-btn{ flex:0 0 auto; width:32px; height:32px; font-size:0.85rem; }
-  .patient-row .row-actions{ gap:5px; }
+  .patient-row .row-actions{ gap:5px; margin-top:10px; justify-content:flex-end; }
   .row-index{
     flex:0 0 26px; width:26px; height:26px; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
@@ -1775,8 +1784,13 @@
   }
 
   function onNameInput(){
-    toUpperLastWord('name');
     const nameEl = document.getElementById('name');
+    // Yazılan isim kayıtlı kişilerde zaten varsa (soyadı büyük harfe çevirme, kişiyi net görsün diye)
+    const rawQuery = nameEl.value.trim().toLocaleLowerCase('tr-TR');
+    const hasExistingMatch = rawQuery && getPatients().some(p => p.name.toLocaleLowerCase('tr-TR').includes(rawQuery));
+    if(!hasExistingMatch){
+      toUpperLastWord('name');
+    }
     // Seçili kişi varken isim elle değiştirilirse seçim geçersiz sayılır
     if(selectedExistingPatientId){
       const p = getPatients().find(x => x.id === selectedExistingPatientId);
@@ -1790,14 +1804,14 @@
       return;
     }
     const matches = getPatients()
-      .filter(p => p.name.toLocaleLowerCase('tr-TR').includes(query))
-      .slice(0, 6);
+      .filter(p => p.name.toLocaleLowerCase('tr-TR').includes(query));
     if(matches.length === 0){
       list.classList.remove('show');
       list.innerHTML = '';
       return;
     }
-    list.innerHTML = matches.map(p => `
+    const countLabel = matches.length === 1 ? '1 kişi bulundu' : `${matches.length} kişi bulundu`;
+    list.innerHTML = `<div class="autocomplete-count">🔍 ${countLabel}</div>` + matches.map(p => `
       <div class="autocomplete-item" onclick="selectExistingPatient(${p.id})">
         <div>${p.name}</div>
         <div class="ac-phone">📞 ${formatPhoneDisplay(p.phone)}</div>
@@ -2005,12 +2019,14 @@
       row.style.cursor = 'pointer';
       row.onclick = () => openHistoryModal(p.id);
       row.innerHTML = `
-        <div class="row-index">${idx + 1}</div>
-        <div class="patient-info">
-          <div class="patient-name">${p.name}</div>
-          <div class="patient-sub">${hacamatSub} ${countBadge} ${completedBadge}</div>
-          <div class="patient-date">Kayıt: ${p.createdDate || ''}</div>
-          ${noteSub}
+        <div class="patient-row-top">
+          <div class="row-index">${idx + 1}</div>
+          <div class="patient-info">
+            <div class="patient-name">${p.name}</div>
+            <div class="patient-sub">${hacamatSub} ${countBadge} ${completedBadge}</div>
+            <div class="patient-date">Kayıt: ${p.createdDate || ''}</div>
+            ${noteSub}
+          </div>
         </div>
         <div class="row-actions" onclick="event.stopPropagation()">
           <a href="${telHrefFor(p.phone)}" class="icon-btn icon-update" title="${formatPhoneDisplay(p.phone)}">📞</a>
