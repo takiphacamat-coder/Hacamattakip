@@ -955,12 +955,6 @@
 
     <div class="settings-divider"></div>
 
-    <div class="settings-block-title">💬 Geri Bildirim</div>
-    <textarea id="feedbackText" rows="2" placeholder="Görüş, öneri ya da hata bildirimi yaz..." style="margin-top:0;"></textarea>
-    <button class="btn-secondary" style="color:var(--crimson); font-weight:700;" onclick="sendFeedback()">Gönder</button>
-
-    <div class="settings-divider"></div>
-
     <div class="settings-row" style="margin-top:0;">
       <label style="margin:0; font-size:0.85rem; color:var(--ink);">🔔 Titreşim</label>
       <label class="toggle-switch">
@@ -1341,19 +1335,6 @@
     appSettings.vibration = checkbox.checked;
     saveSettingsToFirestore();
     vibrateIfEnabled(20);
-  }
-
-  function sendFeedback(){
-    const text = document.getElementById('feedbackText').value.trim();
-    if(!text){
-      alert('Lütfen göndermeden önce bir mesaj yaz.');
-      return;
-    }
-    const to = (currentUser && currentUser.email) ? currentUser.email : '';
-    const subject = encodeURIComponent('Hacamat Takip Uygulaması - Geri Bildirim');
-    const body = encodeURIComponent(text);
-    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
-    document.getElementById('feedbackText').value = '';
   }
 
   /* ---------- Modern Tarih Modalı ---------- */
