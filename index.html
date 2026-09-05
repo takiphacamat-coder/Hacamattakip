@@ -424,6 +424,8 @@
     font-size:1rem; font-weight:700; text-align:center;
     margin-bottom:14px; color:var(--ink);
   }
+  #historyModalTitle{ color:var(--crimson); font-weight:800; }
+  .visit-row-date.completed-date{ color:var(--crimson); font-weight:800; }
   .day-row{
     display:flex; align-items:center; gap:10px;
     padding:10px 4px;
@@ -918,6 +920,31 @@
   </div>
 </div>
 
+<!-- Tamamlanan Hacamat Düzenleme Modalı -->
+<div class="modal-overlay" id="sessionEditModalOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2 style="font-size:1rem; font-weight:700; text-align:center; margin-bottom:14px; color:var(--ink);">Tamamlanan Hacamatı Güncelle</h2>
+
+    <label for="sessionEditDateTrigger">Hacamat Yapılan Tarih</label>
+    <div class="date-trigger" id="sessionEditDateTrigger" onclick="openDateModal('sessionEdit')">
+      <span id="sessionEditDateTriggerText">Tarih seçin</span>
+      <span class="cal-icon">📅</span>
+    </div>
+
+    <label>Hacamat Yapılan Bölgeler</label>
+    <div class="region-chip-list" id="sessionEditRegionChipList"></div>
+
+    <label for="sessionEditNote">Özel Not (varsa)</label>
+    <textarea id="sessionEditNote" rows="3" placeholder="İsterseniz not giriniz"></textarea>
+
+    <div class="modal-actions">
+      <button class="modal-btn today-btn" style="color:var(--crimson);" onclick="deleteSessionFromEditModal()">🗑️ Sil</button>
+      <button class="modal-btn confirm-btn" onclick="saveSessionEdit()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
 <!-- Kupa Sayısı Klavye Modalı -->
 <div class="cup-keypad-overlay" id="cupKeypadOverlay">
   <div class="cup-keypad-sheet">
@@ -1089,7 +1116,7 @@
     if(tab === 'list') renderPatients();
     if(tab === 'upcoming') renderUpcoming();
     if(tab === 'occupancy') renderOccupancy();
-    if(tab === 'completed') renderRegionChips();
+    if(tab === 'completed'){ activeAreaCupsTarget = 'add'; renderRegionChips(); }
   }
 
   /* ---------- Modern Tarih Modalı ---------- */
@@ -1098,13 +1125,14 @@
   let visitSelectedDate = null; // ISO yyyy-mm-dd (randevu ekle/düzenle mini modalı)
   let editSelectedDate = null; // ISO yyyy-mm-dd (kayıtlı kişi güncelleme modalı)
   let completedSelectedDate = null; // ISO yyyy-mm-dd (tamamlanan hacamat formu)
-  let dateModalContext = 'new'; // 'new' | 'visit' | 'edit' | 'completed' — tarih modalı hangi form için açıldı
+  let sessionEditSelectedDate = null; // ISO yyyy-mm-dd (tamamlanan hacamat güncelleme modalı)
+  let dateModalContext = 'new'; // 'new' | 'visit' | 'edit' | 'completed' | 'sessionEdit' — tarih modalı hangi form için açıldı
 
   const AY_ADLARI = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
   const GUN_ADLARI = ["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
 
   function openDateModal(context){
-    dateModalContext = (context === 'visit' || context === 'edit' || context === 'completed') ? context : 'new';
+    dateModalContext = (context === 'visit' || context === 'edit' || context === 'completed' || context === 'sessionEdit') ? context : 'new';
     const current = getContextDate();
     calViewDate = current ? new Date(current) : new Date();
     renderCalendar();
@@ -1123,6 +1151,7 @@
     if(dateModalContext === 'visit') visitSelectedDate = iso;
     else if(dateModalContext === 'edit') editSelectedDate = iso;
     else if(dateModalContext === 'completed') completedSelectedDate = iso;
+    else if(dateModalContext === 'sessionEdit') sessionEditSelectedDate = iso;
     else selectedDate = iso;
     calViewDate = new Date(t);
     renderCalendar();
@@ -1162,6 +1191,8 @@
       setTriggerDisplay('editDateTrigger', 'editDateTriggerText', editSelectedDate);
     } else if(dateModalContext === 'completed'){
       setTriggerDisplay('completedDateTrigger', 'completedDateTriggerText', completedSelectedDate);
+    } else if(dateModalContext === 'sessionEdit'){
+      setTriggerDisplay('sessionEditDateTrigger', 'sessionEditDateTriggerText', sessionEditSelectedDate);
     } else {
       setTriggerDisplay('dateTrigger', 'dateTriggerText', selectedDate);
     }
@@ -1171,6 +1202,7 @@
     if(dateModalContext === 'visit') return visitSelectedDate;
     if(dateModalContext === 'edit') return editSelectedDate;
     if(dateModalContext === 'completed') return completedSelectedDate;
+    if(dateModalContext === 'sessionEdit') return sessionEditSelectedDate;
     return selectedDate;
   }
 
@@ -1218,6 +1250,7 @@
     if(dateModalContext === 'visit') visitSelectedDate = iso;
     else if(dateModalContext === 'edit') editSelectedDate = iso;
     else if(dateModalContext === 'completed') completedSelectedDate = iso;
+    else if(dateModalContext === 'sessionEdit') sessionEditSelectedDate = iso;
     else selectedDate = iso;
     renderCalendar();
     updateDateTrigger();
@@ -1774,13 +1807,15 @@
       row.className = 'visit-row';
       if(entry.type === 'session'){
         const areasHtml = (entry.areas || []).map(a => `<div class="session-area-line">• ${a.name} — <b>${a.cups}</b> kupa</div>`).join('');
+        row.style.cursor = 'pointer';
+        row.onclick = () => openSessionEditModal(currentHistoryPatientId, entry.id);
         row.innerHTML = `
           <div class="visit-row-info">
-            <div class="visit-row-date">${entry.date ? formatTRWithDay(entry.date) : 'Tarih yok'} <span class="visit-type-badge session">✅ Tamamlandı</span></div>
+            <div class="visit-row-date completed-date">${entry.date ? formatTRWithDay(entry.date) : 'Tarih yok'} <span class="visit-type-badge session">✅ Tamamlandı</span></div>
             <div class="session-areas">${areasHtml}</div>
             ${entry.note ? `<div class="visit-row-note">📝 ${entry.note}</div>` : ''}
           </div>
-          <button class="icon-btn icon-update" style="color:var(--crimson);" onclick="deleteSession(${currentHistoryPatientId}, ${entry.id})" title="Sil">🗑️</button>
+          <button class="icon-btn icon-update" style="color:var(--crimson);" onclick="event.stopPropagation(); deleteSession(${currentHistoryPatientId}, ${entry.id})" title="Sil">🗑️</button>
         `;
       } else {
         const isCancelled = entry.status === 'cancelled';
@@ -1818,6 +1853,70 @@
     setPatients(patients);
     closeSessionDeleteConfirm();
     renderHistoryModal();
+  }
+
+  /* ---------- Tamamlanan Hacamat Güncelleme Modalı ---------- */
+  let sessionEditPatientId = null;
+  let sessionEditSessionId = null;
+
+  function openSessionEditModal(patientId, sessionId){
+    sessionEditPatientId = patientId;
+    sessionEditSessionId = sessionId;
+    const p = getPatients().find(x => x.id === patientId);
+    const session = p ? (p.sessions || []).find(s => s.id === sessionId) : null;
+
+    sessionEditSelectedDate = session ? (session.date || null) : null;
+    dateModalContext = 'sessionEdit';
+    setTriggerDisplay('sessionEditDateTrigger', 'sessionEditDateTriggerText', sessionEditSelectedDate);
+
+    sessionEditAreaCups = {};
+    (session ? (session.areas || []) : []).forEach(a => { sessionEditAreaCups[a.name] = a.cups; });
+    activeAreaCupsTarget = 'sessionEdit';
+    renderRegionChips();
+
+    document.getElementById('sessionEditNote').value = session ? (session.note || '') : '';
+
+    document.getElementById('historyModalOverlay').classList.remove('open');
+    document.getElementById('sessionEditModalOverlay').classList.add('open');
+  }
+  function closeSessionEditModal(backToHistory){
+    document.getElementById('sessionEditModalOverlay').classList.remove('open');
+    activeAreaCupsTarget = 'add';
+    if(backToHistory && currentHistoryPatientId){
+      renderHistoryModal();
+      document.getElementById('historyModalOverlay').classList.add('open');
+    }
+  }
+  function saveSessionEdit(){
+    if(!sessionEditPatientId || !sessionEditSessionId) return;
+    const areas = Object.keys(sessionEditAreaCups).map(name => ({ name, cups: sessionEditAreaCups[name] }));
+    if(areas.length === 0){
+      alert('Lütfen en az bir bölge seçin.');
+      return;
+    }
+    const note = document.getElementById('sessionEditNote').value.trim();
+    let patients = getPatients();
+    patients = patients.map(p => {
+      if(p.id !== sessionEditPatientId) return p;
+      const sessions = (p.sessions || []).map(s => s.id === sessionEditSessionId
+        ? { ...s, date: sessionEditSelectedDate || s.date, areas, note }
+        : s);
+      return { ...p, sessions };
+    });
+    setPatients(patients);
+    closeSessionEditModal(true);
+    renderPatients();
+  }
+  function deleteSessionFromEditModal(){
+    if(!sessionEditPatientId || !sessionEditSessionId) return;
+    let patients = getPatients();
+    patients = patients.map(p => {
+      if(p.id !== sessionEditPatientId) return p;
+      return { ...p, sessions: (p.sessions || []).filter(s => s.id !== sessionEditSessionId) };
+    });
+    setPatients(patients);
+    closeSessionEditModal(true);
+    renderPatients();
   }
 
   /* ---------- Randevu (Ziyaret) Ekle/Düzenle Mini Modalı ---------- */
@@ -1896,14 +1995,24 @@
     "Bacak arkaları",
     "Ayak bilekleri ve topuk üstü"
   ];
-  let selectedAreaCups = {}; // { bölgeAdı: kupaSayısı }
+  let selectedAreaCups = {}; // { bölgeAdı: kupaSayısı } — Tamamlanan sekmesi "yeni kayıt" formu
+  let sessionEditAreaCups = {}; // { bölgeAdı: kupaSayısı } — Tamamlanan hacamat güncelleme modalı
+  let activeAreaCupsTarget = 'add'; // 'add' | 'sessionEdit' — bölge çipleri hangi form için düzenleniyor
+
+  function getActiveAreaCups(){
+    return activeAreaCupsTarget === 'sessionEdit' ? sessionEditAreaCups : selectedAreaCups;
+  }
+  function getActiveChipContainerId(){
+    return activeAreaCupsTarget === 'sessionEdit' ? 'sessionEditRegionChipList' : 'regionChipList';
+  }
 
   function renderRegionChips(){
-    const container = document.getElementById('regionChipList');
+    const container = document.getElementById(getActiveChipContainerId());
     if(!container) return;
+    const cupsObj = getActiveAreaCups();
     container.innerHTML = HACAMAT_BOLGELERI.map(area => {
-      const active = Object.prototype.hasOwnProperty.call(selectedAreaCups, area);
-      const cups = active ? selectedAreaCups[area] : 1;
+      const active = Object.prototype.hasOwnProperty.call(cupsObj, area);
+      const cups = active ? cupsObj[area] : 1;
       const safeArea = area.replace(/'/g, "\\'");
       return `
         <div class="region-chip ${active ? 'selected' : ''}" onclick="onRegionRowClick('${safeArea}')">
@@ -1915,20 +2024,22 @@
     }).join('');
   }
   function toggleAreaChip(area){
-    if(Object.prototype.hasOwnProperty.call(selectedAreaCups, area)) delete selectedAreaCups[area];
-    else selectedAreaCups[area] = 1;
+    const cupsObj = getActiveAreaCups();
+    if(Object.prototype.hasOwnProperty.call(cupsObj, area)) delete cupsObj[area];
+    else cupsObj[area] = 1;
     renderRegionChips();
   }
   function onRegionRowClick(area){
-    if(!Object.prototype.hasOwnProperty.call(selectedAreaCups, area)){
-      selectedAreaCups[area] = 1;
+    const cupsObj = getActiveAreaCups();
+    if(!Object.prototype.hasOwnProperty.call(cupsObj, area)){
+      cupsObj[area] = 1;
       renderRegionChips();
     }
     openCupKeypad(area);
   }
   function updateAreaCups(area, value){
     const n = parseInt(value, 10);
-    selectedAreaCups[area] = (n && n > 0) ? n : 1;
+    getActiveAreaCups()[area] = (n && n > 0) ? n : 1;
   }
 
   /* ---- Kupa Sayısı Klavye Modalı ---- */
@@ -1957,7 +2068,7 @@
   function keypadSave(){
     if(!cupKeypadArea) return;
     const n = parseInt(cupKeypadValue, 10);
-    selectedAreaCups[cupKeypadArea] = (n && n > 0) ? n : 1;
+    getActiveAreaCups()[cupKeypadArea] = (n && n > 0) ? n : 1;
     closeCupKeypad();
     renderRegionChips();
   }
@@ -2068,6 +2179,9 @@
   });
   document.getElementById('visitEditModalOverlay').addEventListener('click', function(e){
     if(e.target === this) closeVisitEditModal(true);
+  });
+  document.getElementById('sessionEditModalOverlay').addEventListener('click', function(e){
+    if(e.target === this) closeSessionEditModal(true);
   });
   document.getElementById('upcomingActionOverlay').addEventListener('click', function(e){
     if(e.target === this) closeUpcomingAction();
