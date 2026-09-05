@@ -793,7 +793,9 @@
     <div class="card puff">
       <h2>Kayıtlı Kişiler</h2>
       <input type="text" id="search" class="search-box" placeholder="İsim veya tel ile ara..." oninput="renderPatients()">
-      <button class="btn-secondary" style="margin-top:0; margin-bottom:4px;" onclick="importFromContacts()">📇 Rehberden Ekle</button>
+      <button class="btn-secondary" style="margin-top:0; margin-bottom:4px;" onclick="importFromContacts()">📇 Rehberden Tek Tek Ekle</button>
+      <button class="btn-secondary" style="margin-top:0; margin-bottom:4px;" onclick="document.getElementById('vcfFileInput').click()">📥 Tüm Rehberi Toplu Aktar (.vcf)</button>
+      <input type="file" id="vcfFileInput" accept=".vcf,.vcard,text/vcard,text/x-vcard" style="display:none" onchange="handleVcfFileSelected(this)">
 
       <div id="patientList" style="margin-top:14px;"></div>
     </div>
@@ -1599,60 +1601,114 @@
     else if(digits.length > 10) digits = digits.slice(-10);
     return '0' + digits.slice(0, 10);
   }
-  // Rehberden çoklu kişi seçip (tek tek işaretleyerek veya "tümünü seç" ile) doğrudan
-  // Kayıtlı Kişiler'e ekliyor — form/tarih gerekmiyor, sadece isim+telefon kaydediliyor.
+  // Ortak toplu ekleme: {name, tel} listesini alıp tekrar edenleri atlayarak
+  // doğrudan Kayıtlı Kişiler'e ekler (form/tarih gerekmiyor). Hem tekli rehber
+  // seçiminden hem de .vcf toplu içe aktarmadan çağrılıyor.
+  function addContactsToPatientsBulk(rawList, sourceLabel){
+    if(!rawList || rawList.length === 0){
+      showToast('📇 Aktarılacak kişi bulunamadı');
+      return;
+    }
+    let patients = getPatients();
+    const existingPhones = new Set(patients.map(p => p.phone));
+
+    let addedCount = 0;
+    let skippedCount = 0;
+    const newPatients = [];
+
+    rawList.forEach(c => {
+      const name = (c.name || '').trim();
+      const rawTel = (c.tel || '').trim();
+      if(!name || !rawTel) { skippedCount++; return; }
+      const phone = normalizeContactPhone(rawTel);
+      if(existingPhones.has(phone)) { skippedCount++; return; } // aynı numara zaten kayıtlıysa tekrar eklenmez
+
+      existingPhones.add(phone);
+      newPatients.push({
+        id: Date.now() + addedCount, // aynı milisaniyede çakışmasın diye artırılıyor
+        name: name,
+        phone: phone,
+        note: '',
+        createdDate: new Date().toLocaleDateString('tr-TR'),
+        visits: []
+      });
+      addedCount++;
+    });
+
+    if(newPatients.length > 0){
+      patients = [...newPatients, ...patients];
+      setPatients(patients);
+    }
+
+    switchTab('list');
+    renderPatients();
+    updateUpcomingBadge();
+
+    if(addedCount === 0){
+      showToast(skippedCount > 0 ? '📇 Seçilenler zaten kayıtlıydı' : '📇 Kişi bulunamadı');
+    } else {
+      showToast(`${sourceLabel} ${addedCount} kişi eklendi${skippedCount > 0 ? ` (${skippedCount} zaten kayıtlıydı)` : ''}`);
+    }
+  }
+
+  // Rehberden çoklu kişi seçip (tek tek işaretleyerek) doğrudan Kayıtlı Kişiler'e ekliyor.
   function importFromContacts(){
     if(!('contacts' in navigator) || !('ContactsManager' in window)){
       alert('Bu özellik sadece Android + Chrome tarayıcısında çalışıyor. Bu cihaz/tarayıcı rehber erişimini desteklemiyor.');
       return;
     }
-    // multiple:true → rehber ekranında kişiler tek tek işaretlenebilir veya "tümünü seç" ile hepsi birden aktarılabilir
     navigator.contacts.select(['name', 'tel'], { multiple: true }).then(selectedList => {
       if(!selectedList || selectedList.length === 0) return;
-
-      let patients = getPatients();
-      const existingPhones = new Set(patients.map(p => p.phone));
-
-      let addedCount = 0;
-      let skippedCount = 0;
-      const newPatients = [];
-
-      selectedList.forEach(c => {
-        const name = (c.name && c.name[0]) ? c.name[0].trim() : '';
-        const rawTel = (c.tel && c.tel[0]) ? c.tel[0] : '';
-        if(!name || !rawTel) { skippedCount++; return; }
-        const phone = normalizeContactPhone(rawTel);
-        if(existingPhones.has(phone)) { skippedCount++; return; } // aynı numara zaten kayıtlıysa tekrar eklenmez
-
-        existingPhones.add(phone);
-        newPatients.push({
-          id: Date.now() + addedCount, // aynı milisaniyede çakışmasın diye artırılıyor
-          name: name,
-          phone: phone,
-          note: '',
-          createdDate: new Date().toLocaleDateString('tr-TR'),
-          visits: []
-        });
-        addedCount++;
-      });
-
-      if(newPatients.length > 0){
-        patients = [...newPatients, ...patients];
-        setPatients(patients);
-      }
-
-      switchTab('list');
-      renderPatients();
-      updateUpcomingBadge();
-
-      if(addedCount === 0){
-        showToast(skippedCount > 0 ? '📇 Seçilenler zaten kayıtlıydı' : '📇 Kişi seçilmedi');
-      } else {
-        showToast(`📇 ${addedCount} kişi Kayıtlı Kişiler'e eklendi${skippedCount > 0 ? ` (${skippedCount} zaten kayıtlıydı)` : ''}`);
-      }
+      const rawList = selectedList.map(c => ({
+        name: (c.name && c.name[0]) ? c.name[0] : '',
+        tel: (c.tel && c.tel[0]) ? c.tel[0] : ''
+      }));
+      addContactsToPatientsBulk(rawList, '📇 Rehberden');
     }).catch(err => {
       if(err && err.name !== 'AbortError') console.error('Rehber okunamadı', err);
     });
+  }
+
+  /* ---------- .vcf (vCard) dosyasından toplu rehber aktarımı ---------- */
+  // Telefonun Kişiler uygulamasından "Dışa Aktar / .vcf oluştur" ile alınan dosyayı okuyup
+  // içindeki TÜM kişileri tek seferde Kayıtlı Kişiler'e ekler.
+  function parseVCardText(text){
+    const contacts = [];
+    const blocks = text.split(/BEGIN:VCARD/i).slice(1);
+    blocks.forEach(block => {
+      let name = '';
+      let tel = '';
+      const lines = block.split(/\r\n|\r|\n/);
+      for(const rawLine of lines){
+        const line = rawLine.trim();
+        if(!line) continue;
+        const colonIdx = line.indexOf(':');
+        if(colonIdx === -1) continue;
+        const key = line.slice(0, colonIdx).toUpperCase();
+        const value = line.slice(colonIdx + 1).trim();
+        if(!name && key.startsWith('FN')){
+          name = value;
+        } else if(!tel && key.startsWith('TEL')){
+          tel = value;
+        }
+      }
+      if(name || tel) contacts.push({ name, tel });
+    });
+    return contacts;
+  }
+  function handleVcfFileSelected(input){
+    const file = input.files && input.files[0];
+    input.value = ''; // aynı dosya tekrar seçilebilsin diye sıfırlanıyor
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const contacts = parseVCardText(e.target.result || '');
+      addContactsToPatientsBulk(contacts, '📥 .vcf dosyasından');
+    };
+    reader.onerror = function(){
+      alert('Dosya okunamadı. Lütfen geçerli bir .vcf dosyası seçtiğinizden emin olun.');
+    };
+    reader.readAsText(file);
   }
 
   function onNameInput(){
