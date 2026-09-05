@@ -670,6 +670,45 @@
     box-shadow: inset 2px 2px 5px rgba(0,0,0,0.15), inset -2px -2px 5px rgba(255,255,255,0.7);
     transform: translateY(1px);
   }
+
+  /* ---- Ayarlar Sekmesi ---- */
+  .settings-section-title{ font-size:0.82rem; font-weight:700; color:var(--crimson); text-transform:uppercase; letter-spacing:0.02em; margin-bottom:10px; }
+  .settings-info-text{ font-size:0.8rem; color:var(--ink-soft); line-height:1.5; margin-top:4px; }
+  .settings-loc-box{
+    padding:12px; border-radius:12px; margin-top:10px;
+    background:linear-gradient(160deg,#f2f0ea,#e2ded2);
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.06), inset -2px -2px 5px rgba(255,255,255,0.7);
+    font-size:0.78rem; color:var(--ink); line-height:1.5;
+  }
+  .settings-row{ display:flex; align-items:center; justify-content:space-between; margin-top:14px; }
+  .settings-row label{ margin:0; }
+  .toggle-switch{ position:relative; width:46px; height:26px; flex:0 0 auto; }
+  .toggle-switch input{ opacity:0; width:0; height:0; }
+  .toggle-slider{
+    position:absolute; cursor:pointer; inset:0; border-radius:26px;
+    background:linear-gradient(160deg,#e2ded2,#f2f0ea);
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.12), inset -2px -2px 5px rgba(255,255,255,0.7);
+    transition: 0.2s;
+  }
+  .toggle-slider::before{
+    content:''; position:absolute; width:20px; height:20px; left:3px; top:3px; border-radius:50%;
+    background:#fff; box-shadow:1px 1px 3px rgba(0,0,0,0.25); transition: 0.2s;
+  }
+  .toggle-switch input:checked + .toggle-slider{ background:linear-gradient(160deg, var(--green), var(--green-deep)); }
+  .toggle-switch input:checked + .toggle-slider::before{ transform:translateX(20px); }
+  .btn-secondary{
+    width:100%; border:none; padding:12px; border-radius:12px; font-size:0.85rem; font-weight:700; cursor:pointer; margin-top:10px;
+    color:var(--ink); background:linear-gradient(160deg,#f2f0ea,#e2ded2);
+    box-shadow: 3px 3px 7px var(--shadow-dark), -3px -3px 7px var(--shadow-light);
+  }
+  .btn-secondary:active{ transform:translateY(1px); }
+  .settings-logout-btn{
+    width:100%; border:none; padding:13px; border-radius:12px; font-size:0.88rem; font-weight:700; cursor:pointer;
+    color:#fff; background:linear-gradient(160deg, var(--crimson), var(--crimson-deep));
+    box-shadow: 3px 3px 7px var(--shadow-dark), -3px -3px 7px var(--shadow-light);
+    display:flex; align-items:center; justify-content:center; gap:8px; margin-top:6px;
+  }
+  .settings-logout-btn:active{ transform:translateY(1px); }
 </style>
 </head>
 <body>
@@ -704,10 +743,8 @@
       <button class="tab-btn" id="tabBtnList" onclick="switchTab('list')">📋 Kayıtlı Kişiler</button>
       <button class="tab-btn" id="tabBtnUpcoming" onclick="switchTab('upcoming')">⏰ Yaklaşan<span class="tab-badge" id="upcomingBadge">0</span></button>
       <button class="tab-btn" id="tabBtnOccupancy" onclick="switchTab('occupancy')">📆 Randevu Takvimi</button>
+      <button class="tab-btn" id="tabBtnSettings" onclick="switchTab('settings')">⚙️ Ayarlar</button>
     </div>
-    <button class="logout-btn" onclick="openLogoutConfirm()" aria-label="Çıkış Yap" title="Çıkış Yap">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-    </button>
   </div>
   <!-- Not: "Tamamlanan" artık ayrı bir sekme değil. Yaklaşan'dan
        "Tamamlandı olarak işaretle" ile artık doğrudan modern bir modal açılıyor
@@ -779,6 +816,48 @@
         <span class="occ-legend-item"><i class="occ-dot occ-empty"></i>Boş</span>
         <span class="occ-legend-item"><i class="occ-dot occ-high"></i>Dolu — sayı, o gündeki kişi sayısıdır</span>
       </div>
+    </div>
+  </div>
+
+  <!-- SEKME: Ayarlar -->
+  <div class="panel" id="panel-settings">
+    <div class="card puff">
+      <h2>📍 WhatsApp Konumu</h2>
+      <p class="settings-info-text">Bir kere kaydettiğin konum, sen değiştirene kadar müşterilere gönderilen tüm WhatsApp hatırlatma mesajlarında aynı şekilde kullanılır.</p>
+      <div class="settings-loc-box" id="waLocationStatus">Henüz kayıtlı bir konum yok.</div>
+      <button class="btn-main" id="waLocationSaveBtn" onclick="requestSaveWaLocation()">📍 Şu Anki Konumu Kaydet</button>
+      <button class="btn-secondary" id="waLocationClearBtn" style="display:none;" onclick="clearWaLocation()">🗑️ Kayıtlı Konumu Sil</button>
+    </div>
+
+    <div class="card puff">
+      <h2>💬 Geri Bildirim</h2>
+      <p class="settings-info-text">Uygulamayla ilgili görüş, hata bildirimi veya isteklerini yaz; mail uygulaman üzerinden kayıtlı adresine gönderilsin.</p>
+      <label for="feedbackText">Mesajın</label>
+      <textarea id="feedbackText" rows="4" placeholder="Buraya yaz..."></textarea>
+      <button class="btn-main" onclick="sendFeedback()">📧 Gönder</button>
+    </div>
+
+    <div class="card puff">
+      <h2>🔔 Tercihler</h2>
+      <div class="settings-row">
+        <label for="vibrationToggle" style="margin:0;">Titreşim</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="vibrationToggle" checked onchange="toggleVibration(this)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="card puff">
+      <h2>ℹ️ Hakkında</h2>
+      <p class="settings-info-text" style="text-align:center;">Hacamat Müşteri Takip<br>Kayıtlı hesap: <span id="settingsUserEmail">-</span></p>
+    </div>
+
+    <div class="card puff">
+      <button class="settings-logout-btn" onclick="openLogoutConfirm()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Çıkış Yap
+      </button>
     </div>
   </div>
 
@@ -887,10 +966,9 @@
 </div>
 
 <!-- Çıkış Onay Modalı -->
-<div class="modal-overlay" id="logoutConfirmOverlay">
-  <div class="modal-sheet">
+<div class="modal-overlay" id="logoutConfirmOverlay" style="align-items:center;">
+  <div class="modal-sheet" style="border-radius:22px;">
     <div class="modal-handle"></div>
-    <div class="confirm-icon">🚪</div>
     <h2 style="font-size:1rem; font-weight:700; text-align:center; margin-bottom:6px; color:var(--ink);">Çıkış Yap</h2>
     <p style="font-size:0.85rem; text-align:center; color:var(--ink-soft); margin-bottom:4px;">Hesabınızdan çıkış yapmak istediğinize emin misiniz?</p>
     <div class="modal-actions">
@@ -1137,6 +1215,9 @@
     firestoreReady = false;
     return userDocRef().get().then(doc => {
       cachedPatients = migratePatientShape(doc.exists ? (doc.data().patients || []) : []);
+      const s = doc.exists ? (doc.data().settings || {}) : {};
+      appSettings.waLocation = s.waLocation || null;
+      appSettings.vibration = (s.vibration !== undefined) ? s.vibration : true;
       firestoreReady = true;
       renderPatients();
       updateUpcomingBadge();
@@ -1172,15 +1253,105 @@
     document.getElementById('panel-upcoming').classList.toggle('active', tab === 'upcoming');
     document.getElementById('panel-occupancy').classList.toggle('active', tab === 'occupancy');
     document.getElementById('panel-completed').classList.toggle('active', tab === 'completed');
+    document.getElementById('panel-settings').classList.toggle('active', tab === 'settings');
     document.getElementById('tabBtnNew').classList.toggle('active', tab === 'new');
     document.getElementById('tabBtnList').classList.toggle('active', tab === 'list');
     document.getElementById('tabBtnUpcoming').classList.toggle('active', tab === 'upcoming');
     document.getElementById('tabBtnOccupancy').classList.toggle('active', tab === 'occupancy');
     document.getElementById('tabBtnCompleted')?.classList.toggle('active', tab === 'completed');
+    document.getElementById('tabBtnSettings').classList.toggle('active', tab === 'settings');
     if(tab === 'list') renderPatients();
     if(tab === 'upcoming') renderUpcoming();
     if(tab === 'occupancy') renderOccupancy();
     if(tab === 'completed'){ activeAreaCupsTarget = 'add'; renderRegionChips(); }
+    if(tab === 'settings') renderSettingsPanel();
+  }
+
+  /* ---------- Ayarlar ---------- */
+  let appSettings = { waLocation: null, vibration: true };
+
+  function vibrateIfEnabled(pattern){
+    if(appSettings.vibration && navigator.vibrate){
+      try{ navigator.vibrate(pattern); } catch(e){}
+    }
+  }
+
+  function saveSettingsToFirestore(){
+    if(currentUser){
+      userDocRef().set({ settings: appSettings, email: currentUser.email, updatedAt: Date.now() }, { merge:true })
+        .catch(err => console.error('Ayarlar kaydedilemedi', err));
+    }
+  }
+
+  function renderSettingsPanel(){
+    const box = document.getElementById('waLocationStatus');
+    const clearBtn = document.getElementById('waLocationClearBtn');
+    if(appSettings.waLocation){
+      const d = new Date(appSettings.waLocation.savedAt);
+      const tarih = isNaN(d.getTime()) ? '' : d.toLocaleDateString('tr-TR') + ' ' + d.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
+      box.innerHTML = `✅ Kayıtlı konum mevcut${tarih ? ' — <b>' + tarih + '</b>' : ''}<br><a href="${appSettings.waLocation.link}" target="_blank" style="color:var(--crimson); font-weight:700;">Haritada gör</a>`;
+      clearBtn.style.display = 'block';
+    } else {
+      box.textContent = 'Henüz kayıtlı bir konum yok.';
+      clearBtn.style.display = 'none';
+    }
+    const vibToggle = document.getElementById('vibrationToggle');
+    if(vibToggle) vibToggle.checked = !!appSettings.vibration;
+    const emailSpan = document.getElementById('settingsUserEmail');
+    if(emailSpan) emailSpan.textContent = (currentUser && currentUser.email) ? currentUser.email : '-';
+  }
+
+  function requestSaveWaLocation(){
+    if(!navigator.geolocation){
+      alert('Tarayıcınız konum özelliğini desteklemiyor.');
+      return;
+    }
+    const btn = document.getElementById('waLocationSaveBtn');
+    if(btn) btn.disabled = true;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        appSettings.waLocation = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          link: `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`,
+          savedAt: Date.now()
+        };
+        saveSettingsToFirestore();
+        renderSettingsPanel();
+        vibrateIfEnabled(30);
+        if(btn) btn.disabled = false;
+      },
+      () => {
+        alert('Konum alınamadı. Tarayıcı/telefon ayarlarından konum iznini açman gerekiyor.');
+        if(btn) btn.disabled = false;
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }
+
+  function clearWaLocation(){
+    appSettings.waLocation = null;
+    saveSettingsToFirestore();
+    renderSettingsPanel();
+  }
+
+  function toggleVibration(checkbox){
+    appSettings.vibration = checkbox.checked;
+    saveSettingsToFirestore();
+    vibrateIfEnabled(20);
+  }
+
+  function sendFeedback(){
+    const text = document.getElementById('feedbackText').value.trim();
+    if(!text){
+      alert('Lütfen göndermeden önce bir mesaj yaz.');
+      return;
+    }
+    const to = (currentUser && currentUser.email) ? currentUser.email : '';
+    const subject = encodeURIComponent('Hacamat Takip Uygulaması - Geri Bildirim');
+    const body = encodeURIComponent(text);
+    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+    document.getElementById('feedbackText').value = '';
   }
 
   /* ---------- Modern Tarih Modalı ---------- */
@@ -1374,25 +1545,16 @@
     const waMessage = encodeURIComponent(`Hatırlatma: Yarın hacamat randevunuz bulunmaktadır. Herhangi bir aksilik veya iptal durumunda lütfen bu WhatsApp hattı üzerinden dönüş yapınız.${locationLine}`);
     window.open(`https://wa.me/${cleanPhoneFor(p)}?text=${waMessage}`, '_blank');
   }
-  // Konum Gönder: butona basan kişinin O ANKİ canlı GPS konumunu alıp mesaja ekler (sabit adres değil)
+  // Konum Gönder: Ayarlar'dan bir kez kaydedilen sabit konumu mesaja ekler
   function sendLocationReminder(patientId){
     const p = getPatients().find(x => x.id === patientId);
     if(!p) return;
-    if(!navigator.geolocation){
+    if(appSettings.waLocation && appSettings.waLocation.link){
+      openWaReminder(p, appSettings.waLocation.link);
+    } else {
+      alert('Önce Ayarlar sekmesinden WhatsApp konumunu kaydetmelisin.');
       openWaReminder(p, null);
-      return;
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const link = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
-        openWaReminder(p, link);
-      },
-      () => {
-        alert('Konum alınamadı. Tarayıcı/telefon ayarlarından konum iznini açman gerekiyor.');
-        openWaReminder(p, null);
-      },
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
   }
   // Telefon numarasını "0544 444 44 44" biçiminde gösterir
   function formatPhoneDisplay(raw){
@@ -1544,6 +1706,7 @@
     toastTimer = setTimeout(() => {
       toast.classList.remove('show');
     }, 2200);
+    vibrateIfEnabled(25);
   }
 
   /* ---------- Güncelleme modalı ---------- */
