@@ -793,6 +793,7 @@
     <div class="card puff">
       <h2>Kayıtlı Kişiler</h2>
       <input type="text" id="search" class="search-box" placeholder="İsim veya tel ile ara..." oninput="renderPatients()">
+      <button class="btn-secondary" style="margin-top:0; margin-bottom:4px;" onclick="importFromContacts()">📇 Rehberden Ekle</button>
 
       <div id="patientList" style="margin-top:14px;"></div>
     </div>
@@ -1589,6 +1590,40 @@
 
   /* ---------- Ad Soyad otomatik tamamlama (mevcut kişiyi bulup tekrar randevu almak için) ---------- */
   let selectedExistingPatientId = null;
+
+  // Rehberden tek tek kişi seçip Yeni Kayıt formunu dolduruyor (Chrome/Android - Contact Picker API)
+  function normalizeContactPhone(raw){
+    let digits = (raw || '').replace(/\D/g, '');
+    if(digits.startsWith('90') && digits.length === 12) digits = digits.slice(2);
+    else if(digits.startsWith('0') && digits.length === 11) digits = digits.slice(1);
+    else if(digits.length > 10) digits = digits.slice(-10);
+    return '0' + digits.slice(0, 10);
+  }
+  function importFromContacts(){
+    if(!('contacts' in navigator) || !('ContactsManager' in window)){
+      alert('Bu özellik sadece Android + Chrome tarayıcısında çalışıyor. Bu cihaz/tarayıcı rehber erişimini desteklemiyor.');
+      return;
+    }
+    navigator.contacts.select(['name', 'tel'], { multiple: false }).then(selected => {
+      if(!selected || selected.length === 0) return;
+      const c = selected[0];
+      const name = (c.name && c.name[0]) ? c.name[0] : '';
+      const tel = (c.tel && c.tel[0]) ? c.tel[0] : '';
+      clearSelectedPatient();
+      switchTab('new');
+      const nameEl = document.getElementById('name');
+      const phoneEl = document.getElementById('phone');
+      nameEl.value = name;
+      toUpperLastWord('name');
+      if(tel){
+        phoneEl.value = normalizeContactPhone(tel);
+        formatPhoneInput(phoneEl);
+      }
+      showToast('📇 Rehberden dolduruldu — tarihi seçip kaydet');
+    }).catch(err => {
+      if(err && err.name !== 'AbortError') console.error('Rehber okunamadı', err);
+    });
+  }
 
   function onNameInput(){
     toUpperLastWord('name');
