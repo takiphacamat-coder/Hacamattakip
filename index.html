@@ -20,6 +20,13 @@
     --input-bg: #20232b;
     --login-bg-image: url("https://raw.githubusercontent.com/takiphacamat-coder/Hacamattakip/main/giris.png");
   }
+  .today-date-bar{
+    position:fixed; top:10px; left:12px; z-index:610;
+    font-size:0.68rem; font-weight:800; color:var(--ink-soft);
+    background:var(--input-bg); padding:5px 10px; border-radius:10px;
+    box-shadow: 2px 2px 6px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
+    pointer-events:none;
+  }
   *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
   body{
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
@@ -205,6 +212,10 @@
   .visit-count-badge{
     font-size:0.68rem; font-weight:700; color:var(--ink-soft);
     background:var(--input-bg); border-radius:8px; padding:2px 7px; margin-left:6px;
+  }
+  .patient-completed-badge{
+    font-size:0.68rem; font-weight:800; color:var(--green);
+    background:rgba(35,178,109,0.18); border-radius:8px; padding:2px 7px; margin-left:6px;
   }
 
   /* Tamamlanan Hacamat: bölge seçim kutuları (grid) */
@@ -426,6 +437,10 @@
   }
   #historyModalTitle{ color:var(--crimson); font-weight:800; }
   .visit-row-date.completed-date{ color:var(--crimson); font-weight:800; }
+  #sessionEditModalTitle{ color:var(--crimson); font-weight:800; }
+  #sessionEditModalOverlay .date-trigger.has-value{ color:var(--crimson); font-weight:800; }
+  #quickCompleteModalTitle{ color:var(--crimson); font-weight:800; }
+  #quickCompleteModalOverlay .date-trigger.has-value{ color:var(--crimson); font-weight:800; }
   .day-row{
     display:flex; align-items:center; gap:10px;
     padding:10px 4px;
@@ -464,15 +479,15 @@
   }
   .upcoming-row:last-child{ border-bottom:none; }
   .upcoming-info{ flex:1; min-width:0; }
-  .upcoming-top{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
-  .upcoming-date{ font-size:0.72rem; font-weight:700; color:var(--crimson); flex:0 0 auto; }
+  .upcoming-top{ display:flex; align-items:baseline; gap:8px; flex-wrap:nowrap; min-width:0; }
+  .upcoming-date{ font-size:0.72rem; font-weight:700; color:var(--crimson); flex:0 0 auto; white-space:nowrap; }
   .upcoming-daysleft{
     flex:0 0 auto; font-size:0.62rem; font-weight:800; color:#fff;
     padding:2px 8px; border-radius:9px; white-space:nowrap;
   }
   .upcoming-name{
     font-weight:700; font-size:0.9rem; color:var(--ink);
-    white-space:normal; word-break:break-word; line-height:1.25;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:1 1 auto;
   }
   .upcoming-note{ font-size:0.72rem; color:var(--ink-soft); font-style:italic; margin-top:2px; word-break:break-word; }
   .upcoming-row .icon-btn{ flex:0 0 auto; width:34px; height:34px; font-size:0.9rem; }
@@ -661,6 +676,20 @@
 </head>
 <body>
 
+<div class="today-date-bar" id="todayDateBar"></div>
+<script>
+  (function(){
+    var GUN=["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
+    function paint(){
+      var d=new Date();
+      var s=String(d.getDate()).padStart(2,'0')+"."+String(d.getMonth()+1).padStart(2,'0')+"."+d.getFullYear()+" ("+GUN[d.getDay()]+")";
+      document.getElementById('todayDateBar').textContent="📅 "+s;
+    }
+    paint();
+    setInterval(paint, 60000);
+  })();
+</script>
+
 <!-- Kimlik doğrulaması kontrol edilirken gösterilen kısa yükleniyor ekranı -->
 <div id="authLoading" style="position:fixed; inset:0; z-index:600; display:flex; align-items:center; justify-content:center; background:#0b0c0f;">
   <div style="width:34px; height:34px; border-radius:50%; border:3px solid rgba(255,255,255,0.15); border-top-color:var(--crimson); animation:authSpin 0.8s linear infinite;"></div>
@@ -697,8 +726,9 @@
     <button class="tab-btn" id="tabBtnUpcoming" onclick="switchTab('upcoming')">⏰ Yaklaşan<span class="tab-badge" id="upcomingBadge">0</span></button>
     <button class="tab-btn" id="tabBtnOccupancy" onclick="switchTab('occupancy')">📆 Randevu Takvimi</button>
   </div>
-  <!-- Not: "Tamamlanan" artık ayrı bir sekme değil. O panele sadece Yaklaşan'dan
-       "Tamamlandı olarak işaretle" ile geliniyor (markUpcomingCompleted -> switchTab('completed')). -->
+  <!-- Not: "Tamamlanan" artık ayrı bir sekme değil. Yaklaşan'dan
+       "Tamamlandı olarak işaretle" ile artık doğrudan modern bir modal açılıyor
+       (markUpcomingCompleted -> openQuickCompleteModal). -->
 
   <!-- SEKME 1: Yeni Kayıt -->
   <div class="panel active" id="panel-new">
@@ -924,7 +954,8 @@
 <div class="modal-overlay" id="sessionEditModalOverlay">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <h2 style="font-size:1rem; font-weight:700; text-align:center; margin-bottom:14px; color:var(--ink);">Tamamlanan Hacamatı Güncelle</h2>
+    <h2 style="font-size:0.78rem; font-weight:600; text-align:center; margin-bottom:2px; color:var(--ink-soft);">Tamamlanan Hacamatı Güncelle</h2>
+    <h2 class="day-modal-title" id="sessionEditModalTitle" style="margin-bottom:14px;"></h2>
 
     <label for="sessionEditDateTrigger">Hacamat Yapılan Tarih</label>
     <div class="date-trigger" id="sessionEditDateTrigger" onclick="openDateModal('sessionEdit')">
@@ -977,6 +1008,32 @@
       <button class="modal-btn confirm-btn" style="width:100%; background:linear-gradient(160deg, var(--green), var(--green-deep));" onclick="markUpcomingCompleted()">✅ Tamamlandı olarak işaretle</button>
       <button class="modal-btn today-btn" style="width:100%; color:var(--crimson);" onclick="cancelUpcomingVisit()">❌ İptal Et</button>
       <button class="modal-btn today-btn" style="width:100%;" onclick="closeUpcomingAction()">Vazgeç</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hızlı Tamamlama Modalı (Yaklaşan'dan "Tamamlandı olarak işaretle") -->
+<div class="modal-overlay" id="quickCompleteModalOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2 style="font-size:0.78rem; font-weight:600; text-align:center; margin-bottom:2px; color:var(--ink-soft);">Tamamlandı Olarak İşaretle</h2>
+    <h2 class="day-modal-title" id="quickCompleteModalTitle" style="margin-bottom:14px;"></h2>
+
+    <label for="quickCompleteDateTrigger">Hacamat Yapılan Tarih</label>
+    <div class="date-trigger" id="quickCompleteDateTrigger" onclick="openDateModal('quickComplete')">
+      <span id="quickCompleteDateTriggerText">Tarih seçin</span>
+      <span class="cal-icon">📅</span>
+    </div>
+
+    <label style="text-transform:uppercase; color:var(--crimson);">Uygulanan Bölgeler</label>
+    <div class="region-chip-list" id="quickCompleteRegionChipList"></div>
+
+    <label for="quickCompleteNote">Özel Not (varsa)</label>
+    <textarea id="quickCompleteNote" rows="3" placeholder="İsterseniz not giriniz"></textarea>
+
+    <div class="modal-actions">
+      <button class="modal-btn today-btn" onclick="closeQuickCompleteModal()">İptal</button>
+      <button class="modal-btn confirm-btn" style="background:linear-gradient(160deg, var(--green), var(--green-deep));" onclick="saveQuickComplete()">💾 Kaydet</button>
     </div>
   </div>
 </div>
@@ -1126,13 +1183,14 @@
   let editSelectedDate = null; // ISO yyyy-mm-dd (kayıtlı kişi güncelleme modalı)
   let completedSelectedDate = null; // ISO yyyy-mm-dd (tamamlanan hacamat formu)
   let sessionEditSelectedDate = null; // ISO yyyy-mm-dd (tamamlanan hacamat güncelleme modalı)
-  let dateModalContext = 'new'; // 'new' | 'visit' | 'edit' | 'completed' | 'sessionEdit' — tarih modalı hangi form için açıldı
+  let quickCompleteSelectedDate = null; // ISO yyyy-mm-dd (Yaklaşan'dan hızlı tamamlama modalı)
+  let dateModalContext = 'new'; // 'new' | 'visit' | 'edit' | 'completed' | 'sessionEdit' | 'quickComplete' — tarih modalı hangi form için açıldı
 
   const AY_ADLARI = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
   const GUN_ADLARI = ["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
 
   function openDateModal(context){
-    dateModalContext = (context === 'visit' || context === 'edit' || context === 'completed' || context === 'sessionEdit') ? context : 'new';
+    dateModalContext = (context === 'visit' || context === 'edit' || context === 'completed' || context === 'sessionEdit' || context === 'quickComplete') ? context : 'new';
     const current = getContextDate();
     calViewDate = current ? new Date(current) : new Date();
     renderCalendar();
@@ -1152,6 +1210,7 @@
     else if(dateModalContext === 'edit') editSelectedDate = iso;
     else if(dateModalContext === 'completed') completedSelectedDate = iso;
     else if(dateModalContext === 'sessionEdit') sessionEditSelectedDate = iso;
+    else if(dateModalContext === 'quickComplete') quickCompleteSelectedDate = iso;
     else selectedDate = iso;
     calViewDate = new Date(t);
     renderCalendar();
@@ -1193,6 +1252,8 @@
       setTriggerDisplay('completedDateTrigger', 'completedDateTriggerText', completedSelectedDate);
     } else if(dateModalContext === 'sessionEdit'){
       setTriggerDisplay('sessionEditDateTrigger', 'sessionEditDateTriggerText', sessionEditSelectedDate);
+    } else if(dateModalContext === 'quickComplete'){
+      setTriggerDisplay('quickCompleteDateTrigger', 'quickCompleteDateTriggerText', quickCompleteSelectedDate);
     } else {
       setTriggerDisplay('dateTrigger', 'dateTriggerText', selectedDate);
     }
@@ -1203,6 +1264,7 @@
     if(dateModalContext === 'edit') return editSelectedDate;
     if(dateModalContext === 'completed') return completedSelectedDate;
     if(dateModalContext === 'sessionEdit') return sessionEditSelectedDate;
+    if(dateModalContext === 'quickComplete') return quickCompleteSelectedDate;
     return selectedDate;
   }
 
@@ -1251,6 +1313,7 @@
     else if(dateModalContext === 'edit') editSelectedDate = iso;
     else if(dateModalContext === 'completed') completedSelectedDate = iso;
     else if(dateModalContext === 'sessionEdit') sessionEditSelectedDate = iso;
+    else if(dateModalContext === 'quickComplete') quickCompleteSelectedDate = iso;
     else selectedDate = iso;
     renderCalendar();
     updateDateTrigger();
@@ -1562,6 +1625,8 @@
         ? `<span class="sub-hacamat">🗓️ ${display.label}: ${formatTRWithDay(display.visit.date)}</span>`
         : '';
       const countBadge = visitCount > 0 ? `<span class="visit-count-badge">${visitCount} ziyaret</span>` : '';
+      const sessionCount = (p.sessions || []).length;
+      const completedBadge = sessionCount > 0 ? `<span class="patient-completed-badge">✅ Tamamlandı</span>` : '';
       const noteSub = (display && display.visit.note)
         ? `<div class="patient-note">📝 ${display.visit.note}</div>`
         : '';
@@ -1574,7 +1639,7 @@
         <div class="row-index">${idx + 1}</div>
         <div class="patient-info">
           <div class="patient-name">${p.name}</div>
-          <div class="patient-sub">${hacamatSub} ${countBadge}</div>
+          <div class="patient-sub">${hacamatSub} ${countBadge} ${completedBadge}</div>
           <div class="patient-date">Kayıt: ${p.createdDate || ''}</div>
           ${noteSub}
         </div>
@@ -1657,11 +1722,8 @@
   function markUpcomingCompleted(){
     if(!pendingUpcomingAction) return;
     const { patientId, visitId } = pendingUpcomingAction;
-    // Tamamlanan Hacamat formunu bu kişi seçili şekilde açar; kaydedince randevu otomatik silinir
-    pendingCompleteFromVisit = { patientId, visitId };
     closeUpcomingAction();
-    switchTab('completed');
-    selectCompletedPatient(patientId);
+    openQuickCompleteModal(patientId, visitId);
   }
   function cancelUpcomingVisit(){
     if(!pendingUpcomingAction) return;
@@ -1677,6 +1739,60 @@
     renderUpcoming();
     updateUpcomingBadge();
     showToast('❌ Randevu iptal edildi');
+  }
+
+  /* ---- Hızlı Tamamlama Modalı (Yaklaşan'dan direkt) ---- */
+  let quickCompletePatientId = null;
+  let quickCompleteVisitId = null;
+  function openQuickCompleteModal(patientId, visitId){
+    quickCompletePatientId = patientId;
+    quickCompleteVisitId = visitId;
+    const p = getPatients().find(x => x.id === patientId);
+    document.getElementById('quickCompleteModalTitle').textContent = p ? `🩸 ${p.name}` : '';
+
+    const visit = p ? (p.visits || []).find(v => v.id === visitId) : null;
+    quickCompleteSelectedDate = (visit && visit.date) ? visit.date : toISO(new Date());
+    dateModalContext = 'quickComplete';
+    setTriggerDisplay('quickCompleteDateTrigger', 'quickCompleteDateTriggerText', quickCompleteSelectedDate);
+
+    quickCompleteAreaCups = {};
+    activeAreaCupsTarget = 'quickComplete';
+    renderRegionChips();
+    document.getElementById('quickCompleteNote').value = '';
+
+    document.getElementById('quickCompleteModalOverlay').classList.add('open');
+  }
+  function closeQuickCompleteModal(){
+    document.getElementById('quickCompleteModalOverlay').classList.remove('open');
+    activeAreaCupsTarget = 'add';
+    quickCompletePatientId = null;
+    quickCompleteVisitId = null;
+  }
+  function saveQuickComplete(){
+    if(!quickCompletePatientId) return;
+    const areas = Object.keys(quickCompleteAreaCups).map(name => ({ name, cups: quickCompleteAreaCups[name] }));
+    if(areas.length === 0){
+      alert('Lütfen en az bir bölge seçin.');
+      return;
+    }
+    const note = document.getElementById('quickCompleteNote').value.trim();
+    const patientId = quickCompletePatientId;
+    const visitId = quickCompleteVisitId;
+
+    let patients = getPatients();
+    patients = patients.map(p => {
+      if(p.id !== patientId) return p;
+      const sessions = (p.sessions || []).slice();
+      sessions.push({ id: Date.now(), date: quickCompleteSelectedDate || toISO(new Date()), areas, note });
+      const visits = (p.visits || []).filter(v => v.id !== visitId);
+      return { ...p, sessions, visits };
+    });
+    setPatients(patients);
+    closeQuickCompleteModal();
+    renderPatients();
+    renderUpcoming();
+    updateUpcomingBadge();
+    showToast('✅ Tamamlanan hacamat kaydedildi!');
   }
 
   /* ---------- Takvim Doluluk Oranı ---------- */
@@ -1865,6 +1981,8 @@
     const p = getPatients().find(x => x.id === patientId);
     const session = p ? (p.sessions || []).find(s => s.id === sessionId) : null;
 
+    document.getElementById('sessionEditModalTitle').textContent = p ? `🩸 ${p.name}` : '';
+
     sessionEditSelectedDate = session ? (session.date || null) : null;
     dateModalContext = 'sessionEdit';
     setTriggerDisplay('sessionEditDateTrigger', 'sessionEditDateTriggerText', sessionEditSelectedDate);
@@ -1997,13 +2115,18 @@
   ];
   let selectedAreaCups = {}; // { bölgeAdı: kupaSayısı } — Tamamlanan sekmesi "yeni kayıt" formu
   let sessionEditAreaCups = {}; // { bölgeAdı: kupaSayısı } — Tamamlanan hacamat güncelleme modalı
-  let activeAreaCupsTarget = 'add'; // 'add' | 'sessionEdit' — bölge çipleri hangi form için düzenleniyor
+  let quickCompleteAreaCups = {}; // { bölgeAdı: kupaSayısı } — Yaklaşan'dan hızlı tamamlama modalı
+  let activeAreaCupsTarget = 'add'; // 'add' | 'sessionEdit' | 'quickComplete' — bölge çipleri hangi form için düzenleniyor
 
   function getActiveAreaCups(){
-    return activeAreaCupsTarget === 'sessionEdit' ? sessionEditAreaCups : selectedAreaCups;
+    if(activeAreaCupsTarget === 'sessionEdit') return sessionEditAreaCups;
+    if(activeAreaCupsTarget === 'quickComplete') return quickCompleteAreaCups;
+    return selectedAreaCups;
   }
   function getActiveChipContainerId(){
-    return activeAreaCupsTarget === 'sessionEdit' ? 'sessionEditRegionChipList' : 'regionChipList';
+    if(activeAreaCupsTarget === 'sessionEdit') return 'sessionEditRegionChipList';
+    if(activeAreaCupsTarget === 'quickComplete') return 'quickCompleteRegionChipList';
+    return 'regionChipList';
   }
 
   function renderRegionChips(){
@@ -2031,10 +2154,14 @@
   }
   function onRegionRowClick(area){
     const cupsObj = getActiveAreaCups();
-    if(!Object.prototype.hasOwnProperty.call(cupsObj, area)){
-      cupsObj[area] = 1;
+    if(Object.prototype.hasOwnProperty.call(cupsObj, area)){
+      // Zaten seçili bölgeye tekrar tıklanınca seçim kalksın
+      delete cupsObj[area];
       renderRegionChips();
+      return;
     }
+    cupsObj[area] = 1;
+    renderRegionChips();
     openCupKeypad(area);
   }
   function updateAreaCups(area, value){
@@ -2185,6 +2312,9 @@
   });
   document.getElementById('upcomingActionOverlay').addEventListener('click', function(e){
     if(e.target === this) closeUpcomingAction();
+  });
+  document.getElementById('quickCompleteModalOverlay').addEventListener('click', function(e){
+    if(e.target === this) closeQuickCompleteModal();
   });
   document.getElementById('cupKeypadOverlay').addEventListener('click', function(e){
     if(e.target === this) closeCupKeypad();
