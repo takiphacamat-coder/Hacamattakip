@@ -40,14 +40,16 @@
   header{ text-align:center; margin-bottom:18px; }
   header h1{ font-size:1.2rem; font-weight:700; letter-spacing:-0.01em; color:var(--ink); }
 
-  /* ---- Kabarık / 3D taban (koyu neumorphism) ---- */
+  /* ---- Kabarık / 3D taban (cam / glassmorphism) ---- */
   .puff{
-    background:linear-gradient(160deg,#f7f5f0,#eae7de);
+    background:linear-gradient(160deg, rgba(255,255,255,0.5), rgba(255,255,255,0.22));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-radius:16px;
     box-shadow:
       6px 6px 14px var(--shadow-dark),
       -6px -6px 14px var(--shadow-light);
-    border:1px solid rgba(0,0,0,0.05);
+    border:1px solid rgba(255,255,255,0.5);
   }
   .puff:active{
     box-shadow:
@@ -64,7 +66,10 @@
     padding:5px;
     margin-bottom:16px;
     border-radius:18px;
-    background:linear-gradient(160deg,#e6e3da,#f2f0eb);
+    background:rgba(255,255,255,0.28);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border:1px solid rgba(255,255,255,0.5);
     box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light);
   }
   .tab-btn{
@@ -72,7 +77,7 @@
     flex:1;
     border:none;
     padding:9px 2px;
-    font-size:0.6rem;
+    font-size:0.74rem;
     font-weight:600;
     color:var(--ink-soft);
     background:transparent;
@@ -93,8 +98,8 @@
     background:transparent;
   }
   #tabBtnOccupancy::after{ display:none; }
-  #tabBtnOccupancy{ font-size:0.54rem; line-height:1.15; white-space:normal; }
-  #tabBtnList{ font-size:0.54rem; line-height:1.15; white-space:normal; }
+  #tabBtnOccupancy{ font-size:0.66rem; line-height:1.2; white-space:normal; }
+  #tabBtnList{ font-size:0.66rem; line-height:1.2; white-space:normal; }
   #tabBtnCompleted{ grid-column: 1 / -1; }
   .tab-btn.active{
     color:#fff;
@@ -113,8 +118,8 @@
   .tab-badge.show{ display:flex; }
 
   .panel{ display:none; }
-  .panel.active{ display:block; animation:fade .2s ease; }
-  @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+  .panel.active{ display:block; animation:fade .45s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
 
   .card{ padding:18px 16px; margin-bottom:16px; }
   .card h2{ font-size:1rem; font-weight:700; color:var(--ink); margin-bottom:14px; text-align:center; letter-spacing:-0.01em; }
