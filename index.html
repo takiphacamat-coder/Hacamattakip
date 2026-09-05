@@ -337,6 +337,7 @@
     display:flex; align-items:center; gap:10px;
     padding:12px 12px; margin-bottom:10px;
   }
+  .patient-row .icon-btn{ flex:0 0 auto; width:34px; height:34px; font-size:0.9rem; }
   .row-index{
     flex:0 0 26px; width:26px; height:26px; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
@@ -1539,6 +1540,12 @@
       openWaReminder(p, null);
     }
   }
+  // Sadece WhatsApp sohbetini açar, hiçbir otomatik mesaj yazmaz
+  function openWhatsAppChat(patientId){
+    const p = getPatients().find(x => x.id === patientId);
+    if(!p) return;
+    window.open(`https://wa.me/${cleanPhoneFor(p)}`, '_blank');
+  }
   // Telefon numarasını "0544 444 44 44" biçiminde gösterir
   function formatPhoneDisplay(raw){
     let digits = (raw || '').replace(/\D/g, '');
@@ -1799,6 +1806,7 @@
         <div class="row-actions" onclick="event.stopPropagation()">
           <a href="${telHrefFor(p.phone)}" class="icon-btn icon-update" title="${formatPhoneDisplay(p.phone)}">📞</a>
           <button class="icon-btn icon-wa" onclick="sendLocationReminder(${p.id})" title="Konum Gönder">📍</button>
+          <button class="icon-btn icon-wa" onclick="openWhatsAppChat(${p.id})" title="WhatsApp'tan Yaz">💬</button>
           <button class="icon-btn icon-update" onclick="openEditModal(${p.id})" title="Güncelle">✏️</button>
         </div>
       `;
