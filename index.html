@@ -793,8 +793,7 @@
     <div class="card puff">
       <h2>Kayıtlı Kişiler</h2>
       <input type="text" id="search" class="search-box" placeholder="İsim veya tel ile ara..." oninput="renderPatients()">
-      <button class="btn-secondary" style="margin-top:0; margin-bottom:4px;" onclick="importFromContacts()">📇 Rehberden Tek Tek Ekle</button>
-      <button class="btn-secondary" style="margin-top:0; margin-bottom:4px;" onclick="document.getElementById('vcfFileInput').click()">📥 Tüm Rehberi Toplu Aktar (.vcf)</button>
+      <button class="btn-secondary" style="margin-top:0; margin-bottom:4px; color:var(--crimson);" onclick="openClearAllConfirm()">🧹 Tümünü Temizle</button>
       <input type="file" id="vcfFileInput" accept=".vcf,.vcard,text/vcard,text/x-vcard" style="display:none" onchange="handleVcfFileSelected(this)">
 
       <div id="patientList" style="margin-top:14px;"></div>
@@ -933,6 +932,20 @@
   </div>
 </div>
 
+<!-- Tümünü Temizle Onay Modalı -->
+<div class="modal-overlay" id="clearAllConfirmOverlay" style="z-index:250;">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="confirm-icon">🧹</div>
+    <h2 style="font-size:1rem; font-weight:700; text-align:center; margin-bottom:6px; color:var(--ink);">Tüm Kayıtlı Kişileri Sil</h2>
+    <p style="font-size:0.85rem; text-align:center; color:var(--ink-soft); margin-bottom:4px;">Kayıtlı tüm kişiler, randevuları ve tamamlanan hacamat kayıtları kalıcı olarak silinecek. Bu işlem geri alınamaz.</p>
+    <div class="modal-actions">
+      <button class="modal-btn today-btn" onclick="closeClearAllConfirm()">Vazgeç</button>
+      <button class="modal-btn confirm-btn" style="background:linear-gradient(160deg, var(--crimson), var(--crimson-deep));" onclick="confirmClearAll()">🧹 Tümünü Sil</button>
+    </div>
+  </div>
+</div>
+
 <!-- Çıkış Onay Modalı -->
 <div class="modal-overlay" id="logoutConfirmOverlay" style="align-items:center;">
   <div class="modal-sheet" style="border-radius:22px;">
@@ -957,6 +970,14 @@
     <div class="settings-btn-row">
       <button class="btn-secondary" id="waLocationSaveBtn" onclick="requestSaveWaLocation()">Konumu Kaydet</button>
       <button class="btn-secondary" id="waLocationClearBtn" style="display:none; color:var(--crimson);" onclick="clearWaLocation()">Sil</button>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <div class="settings-block-title">📇 Rehberden Kişi Aktar</div>
+    <div class="settings-btn-row" style="flex-direction:column; gap:8px;">
+      <button class="btn-secondary" style="margin:0; width:100%;" onclick="closeSettingsModal(); importFromContacts();">📇 Rehberden Tek Tek Ekle</button>
+      <button class="btn-secondary" style="margin:0; width:100%;" onclick="closeSettingsModal(); document.getElementById('vcfFileInput').click();">📥 Tüm Rehberi Toplu Aktar (.vcf)</button>
     </div>
 
     <div class="settings-divider"></div>
@@ -1885,6 +1906,21 @@
     updateUpcomingBadge();
   }
 
+  /* ---------- Tümünü Temizle (tüm kayıtlı kişiler) ---------- */
+  function openClearAllConfirm(){
+    document.getElementById('clearAllConfirmOverlay').classList.add('open');
+  }
+  function closeClearAllConfirm(){
+    document.getElementById('clearAllConfirmOverlay').classList.remove('open');
+  }
+  function confirmClearAll(){
+    setPatients([]);
+    closeClearAllConfirm();
+    renderPatients();
+    updateUpcomingBadge();
+    showToast('🧹 Tüm kayıtlı kişiler silindi');
+  }
+
   /* ---------- Kayıtlı kişiler (satır listesi) ---------- */
   function renderPatients(){
     const search = document.getElementById('search').value.toLowerCase();
@@ -1892,9 +1928,9 @@
     const listContainer = document.getElementById('patientList');
     listContainer.innerHTML = '';
 
-    const filtered = patients.filter(p =>
-      p.name.toLowerCase().includes(search) || p.phone.includes(search)
-    );
+    const filtered = patients
+      .filter(p => p.name.toLowerCase().includes(search) || p.phone.includes(search))
+      .sort((a, b) => a.name.localeCompare(b.name, 'tr-TR'));
 
     if(filtered.length === 0){
       listContainer.innerHTML = '<p class="empty-state">Kayıt bulunamadı.</p>';
@@ -2578,6 +2614,9 @@
   });
   document.getElementById('deleteConfirmOverlay').addEventListener('click', function(e){
     if(e.target === this) closeDeleteConfirm();
+  });
+  document.getElementById('clearAllConfirmOverlay').addEventListener('click', function(e){
+    if(e.target === this) closeClearAllConfirm();
   });
   document.getElementById('logoutConfirmOverlay').addEventListener('click', function(e){
     if(e.target === this) closeLogoutConfirm();
