@@ -118,6 +118,7 @@
   .card h2{ font-size:1rem; font-weight:700; color:var(--ink); margin-bottom:14px; text-align:center; letter-spacing:-0.01em; }
 
   label{ font-size:0.78rem; font-weight:600; color:var(--ink-soft); display:block; margin-top:12px; margin-bottom:6px; }
+  .field-label-strong{ color:var(--crimson); font-weight:800; }
 
   input[type="text"], input[type="tel"]{
     width:100%; padding:12px 14px; border:none; border-radius:12px; font-size:0.95rem; outline:none;
@@ -761,7 +762,7 @@
     <div class="card puff">
       <h2>Hacamat Kaydı Oluştur</h2>
 
-      <label for="name">Ad Soyad</label>
+      <label for="name" class="field-label-strong">Ad Soyad</label>
       <div class="autocomplete-wrap">
         <input type="text" id="name" autocomplete="off" oninput="onNameInput()" onblur="setTimeout(function(){ document.getElementById('nameSuggestions').classList.remove('show'); }, 180)">
         <div class="autocomplete-list" id="nameSuggestions"></div>
@@ -771,16 +772,16 @@
         <button type="button" class="chip-clear" onclick="clearSelectedPatient()">✕</button>
       </div>
 
-      <label for="phone">Telefon Numarası</label>
+      <label for="phone" class="field-label-strong">Telefon Numarası</label>
       <input type="tel" id="phone" oninput="formatPhoneInput(this)" maxlength="14">
 
-      <label for="dateTrigger">Hacamat Yapılacak Tarih</label>
+      <label for="dateTrigger" class="field-label-strong">Hacamat Yapılacak Tarih</label>
       <div class="date-trigger" id="dateTrigger" onclick="openDateModal()">
         <span id="dateTriggerText">Tarih seçin</span>
         <span class="cal-icon">📅</span>
       </div>
 
-      <label for="note">Özel Not (varsa)</label>
+      <label for="note" class="field-label-strong">Özel Not (varsa)</label>
       <textarea id="note" rows="3" placeholder="Bu randevuya özel not varsa giriniz"></textarea>
 
       <button class="btn-main" onclick="savePatient()">KAYDET</button>
