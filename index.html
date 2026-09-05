@@ -20,19 +20,12 @@
     --input-bg: #e9e6dd;
     --login-bg-image: url("https://raw.githubusercontent.com/takiphacamat-coder/Hacamattakip/main/giris.png");
   }
-  .today-date-bar{
-    position:fixed; top:10px; left:12px; z-index:610;
-    font-size:0.68rem; font-weight:800; color:var(--ink-soft);
-    background:var(--input-bg); padding:5px 10px; border-radius:10px;
-    box-shadow: 2px 2px 6px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
-    pointer-events:none;
-  }
   *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
   body{
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
     background:var(--bg);
     color:var(--ink);
-    padding:46px 14px 40px;
+    padding:16px 14px 40px;
     min-height:100vh;
   }
   .container{ max-width:480px; margin:0 auto; }
@@ -656,17 +649,19 @@
   .login-ornament .orn-line.right{ background:linear-gradient(90deg, var(--crimson), transparent); }
   .login-ornament .orn-icon{ color:var(--crimson); font-size:0.85rem; }
   #appRoot{ display:none; }
-  .user-bar{
-    display:flex; align-items:center; justify-content:flex-end; gap:10px;
-    margin-bottom:0; padding:0;
+  .top-row{
+    display:flex; align-items:stretch; gap:8px;
+    margin-bottom:16px;
   }
-  .user-bar-info{ display:none; }
+  .top-row .tabbar{ flex:1; margin-bottom:0; min-width:0; }
   .user-bar-avatar{ width:28px; height:28px; border-radius:50%; flex:0 0 auto; }
   .user-bar-email{ font-size:0.72rem; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .logout-btn{
-    position:fixed; top:10px; right:10px; z-index:60;
-    border:none; cursor:pointer; padding:6px 10px; border-radius:9px;
-    font-size:0.62rem; font-weight:700; color:#fff;
+    flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center;
+    width:48px;
+    border:none; cursor:pointer; border-radius:14px;
+    font-size:1.15rem; line-height:1;
     background:linear-gradient(160deg, var(--crimson), var(--crimson-deep));
     box-shadow: 3px 3px 7px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
   }
@@ -677,20 +672,6 @@
 </style>
 </head>
 <body>
-
-<div class="today-date-bar" id="todayDateBar" style="display:none;"></div>
-<script>
-  (function(){
-    var GUN=["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
-    function paint(){
-      var d=new Date();
-      var s=String(d.getDate()).padStart(2,'0')+"."+String(d.getMonth()+1).padStart(2,'0')+"."+d.getFullYear()+" ("+GUN[d.getDay()]+")";
-      document.getElementById('todayDateBar').textContent="📅 "+s;
-    }
-    paint();
-    setInterval(paint, 60000);
-  })();
-</script>
 
 <!-- Kimlik doğrulaması kontrol edilirken gösterilen kısa yükleniyor ekranı -->
 <div id="authLoading" style="position:fixed; inset:0; z-index:600; display:flex; align-items:center; justify-content:center; background:#f0eee9;">
@@ -711,19 +692,19 @@
 
 <div id="appRoot">
 <div class="container">
-  <div class="user-bar">
-    <div class="user-bar-info">
-      <img class="user-bar-avatar" id="userAvatar" src="" alt="">
-      <span class="user-bar-email" id="userEmail"></span>
-    </div>
-    <button class="logout-btn" onclick="signOutUser()">Çıkış Yap</button>
+  <div class="user-bar-info" style="display:none;">
+    <img class="user-bar-avatar" id="userAvatar" src="" alt="">
+    <span class="user-bar-email" id="userEmail"></span>
   </div>
 
-  <div class="tabbar">
-    <button class="tab-btn active" id="tabBtnNew" onclick="switchTab('new')">✍️ Yeni Kayıt</button>
-    <button class="tab-btn" id="tabBtnList" onclick="switchTab('list')">📋 Kayıtlı Kişiler</button>
-    <button class="tab-btn" id="tabBtnUpcoming" onclick="switchTab('upcoming')">⏰ Yaklaşan<span class="tab-badge" id="upcomingBadge">0</span></button>
-    <button class="tab-btn" id="tabBtnOccupancy" onclick="switchTab('occupancy')">📆 Randevu Takvimi</button>
+  <div class="top-row">
+    <div class="tabbar">
+      <button class="tab-btn active" id="tabBtnNew" onclick="switchTab('new')">✍️ Yeni Kayıt</button>
+      <button class="tab-btn" id="tabBtnList" onclick="switchTab('list')">📋 Kayıtlı Kişiler</button>
+      <button class="tab-btn" id="tabBtnUpcoming" onclick="switchTab('upcoming')">⏰ Yaklaşan<span class="tab-badge" id="upcomingBadge">0</span></button>
+      <button class="tab-btn" id="tabBtnOccupancy" onclick="switchTab('occupancy')">📆 Randevu Takvimi</button>
+    </div>
+    <button class="logout-btn" onclick="signOutUser()" aria-label="Çıkış Yap" title="Çıkış Yap">🚪</button>
   </div>
   <!-- Not: "Tamamlanan" artık ayrı bir sekme değil. Yaklaşan'dan
        "Tamamlandı olarak işaretle" ile artık doğrudan modern bir modal açılıyor
@@ -1145,14 +1126,12 @@
     if(user){
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appRoot').style.display = 'block';
-      document.getElementById('todayDateBar').style.display = 'block';
       document.getElementById('userEmail').textContent = user.email || '';
       document.getElementById('userAvatar').src = user.photoURL || '';
       migrateLocalDataIfNeeded().then(loadPatientsFromFirestore);
     } else {
       document.getElementById('loginScreen').style.display = 'flex';
       document.getElementById('appRoot').style.display = 'none';
-      document.getElementById('todayDateBar').style.display = 'none';
       document.getElementById('loginStatus').textContent = '';
       cachedPatients = [];
     }
