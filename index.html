@@ -2747,5 +2747,17 @@
   // kullanıcı giriş yapıp Firestore verisi yüklendiğinde loadPatientsFromFirestore() içinden çağrılıyor.
 </script>
 
+<script>
+  // Sayfa bir kez internetle açıldıktan sonra cihaza kaydedilsin diye Service Worker kaydediliyor.
+  // Böylece bir dahaki sefere internet olmasa bile sayfa açılabiliyor.
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(err => {
+        console.warn('Service Worker kaydedilemedi (offline açılış desteklenmeyebilir)', err);
+      });
+    });
+  }
+</script>
+
 </body>
 </html>
