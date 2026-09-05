@@ -6,10 +6,10 @@
 <title>Hacamat Müşteri Takip</title>
 <style>
   :root{
-    --bg: #1b1d24;
-    --bg-deep: #14161b;
-    --shadow-light: #262a34;
-    --shadow-dark: #0e0f13;
+    --bg: #2a2d36;
+    --bg-deep: #22242c;
+    --shadow-light: #363a46;
+    --shadow-dark: #1c1e24;
     --ink: #eef1f6;
     --ink-soft: #9aa1b0;
     --crimson: #d8395a;
@@ -17,7 +17,7 @@
     --green: #23b26d;
     --green-deep: #178a54;
     --blue: #4da3ff;
-    --input-bg: #20232b;
+    --input-bg: #2e323c;
     --login-bg-image: url("https://raw.githubusercontent.com/takiphacamat-coder/Hacamattakip/main/giris.png");
   }
   .today-date-bar{
@@ -42,7 +42,7 @@
 
   /* ---- Kabarık / 3D taban (koyu neumorphism) ---- */
   .puff{
-    background:linear-gradient(160deg,#22252d,#191b21);
+    background:linear-gradient(160deg,#33363f,#282b33);
     border-radius:16px;
     box-shadow:
       6px 6px 14px var(--shadow-dark),
@@ -64,7 +64,7 @@
     padding:5px;
     margin-bottom:16px;
     border-radius:18px;
-    background:linear-gradient(160deg,#15171c,#20232b);
+    background:linear-gradient(160deg,#22242c,#2e323c);
     box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light);
   }
   .tab-btn{
@@ -107,7 +107,7 @@
     border-radius:8px; background:var(--crimson);
     color:#fff; font-size:0.58rem; font-weight:800;
     display:none; align-items:center; justify-content:center; line-height:1;
-    box-shadow:0 0 0 2px #1b1d24;
+    box-shadow:0 0 0 2px #2a2d36;
     z-index:2;
   }
   .tab-badge.show{ display:flex; }
@@ -282,7 +282,7 @@
   .cup-keypad-overlay.open{ display:flex; animation:overlayFade .2s ease; }
   .cup-keypad-sheet{
     width:250px;
-    background:linear-gradient(160deg,#22252d,#191b21);
+    background:linear-gradient(160deg,#33363f,#282b33);
     border-radius:20px;
     padding:18px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.55);
@@ -522,7 +522,7 @@
 
   .modal-sheet{
     width:100%; max-width:420px;
-    background:linear-gradient(160deg,#22252d,#191b21);
+    background:linear-gradient(160deg,#33363f,#282b33);
     border-radius:22px 22px 0 0;
     padding:18px 18px 26px;
     box-shadow: 0 -8px 24px rgba(0,0,0,0.5);
@@ -640,7 +640,7 @@
     display:flex; align-items:center; justify-content:center; gap:10px;
     width:100%; padding:14px 22px; border:none; border-radius:14px; cursor:pointer;
     margin-top:8px;
-    background:linear-gradient(160deg,#262a34,#191b21);
+    background:linear-gradient(160deg,#363a46,#282b33);
     box-shadow: 4px 4px 10px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
     color:var(--ink); font-size:0.92rem; font-weight:700;
   }
