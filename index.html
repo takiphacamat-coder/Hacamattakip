@@ -1970,9 +1970,17 @@
     const listContainer = document.getElementById('patientList');
     listContainer.innerHTML = '';
 
+    // Quoted-Printable çözülememiş, "=41=62..." gibi bozuk görünen isimler alfabetik sıralamada
+    // en sona atılıyor; bunun dışındakiler normal Türkçe alfabetik sırayla gösteriliyor.
+    const isGarbledName = (name) => /=[0-9A-Fa-f]{2}=/.test(name) || name.trim().startsWith('=');
     const filtered = patients
       .filter(p => p.name.toLowerCase().includes(search) || p.phone.includes(search))
-      .sort((a, b) => a.name.localeCompare(b.name, 'tr-TR'));
+      .sort((a, b) => {
+        const aGarbled = isGarbledName(a.name);
+        const bGarbled = isGarbledName(b.name);
+        if(aGarbled !== bGarbled) return aGarbled ? 1 : -1;
+        return a.name.localeCompare(b.name, 'tr-TR');
+      });
 
     if(filtered.length === 0){
       listContainer.innerHTML = '<p class="empty-state">Kayıt bulunamadı.</p>';
