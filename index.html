@@ -343,8 +343,24 @@
   .search-box{ margin-bottom:14px; }
 
   /* ---- Kayıtlı kişiler: satır (liste) görünümü ---- */
+  /* Not: .puff (backdrop-filter: blur) kasıtlı olarak KULLANILMIYOR — yüzlerce satırda
+     blur efekti çok pahalı olup listeyi donduruyordu. Aynı görünüm blur olmadan taklit ediliyor. */
   .patient-row{
     padding:12px 12px; margin-bottom:10px;
+    background:linear-gradient(160deg, rgba(255,255,255,0.65), rgba(255,255,255,0.4));
+    border-radius:16px;
+    box-shadow:
+      6px 6px 14px var(--shadow-dark),
+      -6px -6px 14px var(--shadow-light);
+    border:1px solid rgba(255,255,255,0.5);
+    /* Ekranda görünmeyen satırların layout/paint maliyetini tarayıcı erteliyor — büyük listede kritik hız kazancı */
+    content-visibility:auto;
+    contain-intrinsic-size: 0 140px;
+  }
+  .patient-row:active{
+    box-shadow:
+      inset 3px 3px 8px var(--shadow-dark),
+      inset -3px -3px 8px var(--shadow-light);
   }
   .patient-row-top{ display:flex; align-items:flex-start; gap:10px; }
   .patient-row .icon-btn{ flex:0 0 auto; width:32px; height:32px; font-size:0.85rem; }
@@ -775,10 +791,6 @@
       <div class="autocomplete-wrap">
         <input type="text" id="name" autocomplete="off" oninput="onNameInput()" onblur="setTimeout(function(){ document.getElementById('nameSuggestions').classList.remove('show'); }, 180)">
         <div class="autocomplete-list" id="nameSuggestions"></div>
-      </div>
-      <div class="selected-person-chip" id="selectedPersonChip">
-        <span id="selectedPersonChipText">✅ Mevcut kişi seçildi — yeni randevu eklenecek</span>
-        <button type="button" class="chip-clear" onclick="clearSelectedPatient()">✕</button>
       </div>
 
       <label for="phone" class="field-label-strong">Telefon Numarası</label>
@@ -1827,13 +1839,10 @@
     document.getElementById('phone').value = p.phone;
     document.getElementById('nameSuggestions').classList.remove('show');
     document.getElementById('nameSuggestions').innerHTML = '';
-    const chip = document.getElementById('selectedPersonChip');
-    document.getElementById('selectedPersonChipText').textContent = `✅ ${p.name} seçildi — yeni randevu eklenecek`;
-    chip.classList.add('show');
+    openDateModal('new');
   }
   function clearSelectedPatient(){
     selectedExistingPatientId = null;
-    document.getElementById('selectedPersonChip').classList.remove('show');
   }
 
   /* ---------- Yeni kayıt / yeni randevu ---------- */
@@ -2001,6 +2010,7 @@
       return;
     }
 
+    const fragment = document.createDocumentFragment();
     filtered.forEach((p, idx) => {
       const visitCount = (p.visits || []).length;
       const display = getDisplayVisitFor(p);
@@ -2015,7 +2025,7 @@
         : '';
 
       const row = document.createElement('div');
-      row.className = 'patient-row puff';
+      row.className = 'patient-row';
       row.style.cursor = 'pointer';
       row.onclick = () => openHistoryModal(p.id);
       row.innerHTML = `
@@ -2035,8 +2045,9 @@
           <button class="icon-btn icon-update" onclick="openEditModal(${p.id})" title="Güncelle">✏️</button>
         </div>
       `;
-      listContainer.appendChild(row);
+      fragment.appendChild(row);
     });
+    listContainer.appendChild(fragment);
   }
 
   /* ---------- Hacamat Yaklaşanlar ---------- */
