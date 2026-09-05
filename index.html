@@ -1180,6 +1180,18 @@
   const db = firebase.firestore();
   const googleProvider = new firebase.auth.GoogleAuthProvider();
 
+  // İnternet olmasa da veriler cihazda saklansın, kayıt eklenebilsin diye offline destek açılıyor.
+  // İnternet yokken yapılan eklemeler/değişiklikler cihazda tutulur, bağlantı gelince otomatik olarak buluta gönderilir.
+  db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+    if(err.code === 'failed-precondition'){
+      console.warn('Offline destek: birden fazla sekme açık olduğu için devre dışı kaldı.');
+    } else if(err.code === 'unimplemented'){
+      console.warn('Offline destek: bu tarayıcı desteklemiyor.');
+    } else {
+      console.warn('Offline destek açılamadı', err);
+    }
+  });
+
   let currentUser = null;
   let cachedPatients = [];   // Firestore'dan gelen/oraya giden veri, bellekte tutulur
   let firestoreReady = false;
@@ -1251,20 +1263,25 @@
     });
   }
 
+  function applyLoadedPatients(doc){
+    cachedPatients = migratePatientShape(doc.exists ? (doc.data().patients || []) : []);
+    const s = doc.exists ? (doc.data().settings || {}) : {};
+    appSettings.waLocation = s.waLocation || null;
+    appSettings.vibration = (s.vibration !== undefined) ? s.vibration : true;
+    firestoreReady = true;
+    renderPatients();
+    updateUpcomingBadge();
+    renderRegionChips();
+  }
   function loadPatientsFromFirestore(){
     firestoreReady = false;
-    return userDocRef().get().then(doc => {
-      cachedPatients = migratePatientShape(doc.exists ? (doc.data().patients || []) : []);
-      const s = doc.exists ? (doc.data().settings || {}) : {};
-      appSettings.waLocation = s.waLocation || null;
-      appSettings.vibration = (s.vibration !== undefined) ? s.vibration : true;
-      firestoreReady = true;
-      renderPatients();
-      updateUpcomingBadge();
-      renderRegionChips();
-    }).catch(err => {
-      console.error('Firestore okuma hatası', err);
-      firestoreReady = true;
+    return userDocRef().get().then(applyLoadedPatients).catch(err => {
+      console.error('Firestore okuma hatası (sunucu), cihazdaki offline kopya deneniyor', err);
+      // İnternet yoksa/sunucuya ulaşılamıyorsa cihazda önceden kaydedilmiş offline kopyayı doğrudan oku
+      return userDocRef().get({ source: 'cache' }).then(applyLoadedPatients).catch(cacheErr => {
+        console.error('Offline kopya da okunamadı (muhtemelen daha önce hiç yüklenmemiş)', cacheErr);
+        firestoreReady = true;
+      });
     });
   }
 
