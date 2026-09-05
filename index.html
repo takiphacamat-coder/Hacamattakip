@@ -32,7 +32,7 @@
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
     background:var(--bg);
     color:var(--ink);
-    padding:18px 14px 40px;
+    padding:46px 14px 40px;
     min-height:100vh;
   }
   .container{ max-width:480px; margin:0 auto; }
@@ -470,24 +470,24 @@
   }
   .toast.show{ opacity:1; transform:translate(-50%, -50%) scale(1); }
 
-  /* ---- Yaklaşanlar: tek satır (excel gibi) görünümü ---- */
+  /* ---- Yaklaşanlar: tarih/kalan gün üstte, isim tam görünür şekilde altta ---- */
   .upcoming-row{
     display:flex; align-items:center; gap:8px;
-    padding:6px 4px;
+    padding:8px 4px;
     border-bottom:1px solid rgba(255,255,255,0.06);
     cursor:pointer;
   }
   .upcoming-row:last-child{ border-bottom:none; }
   .upcoming-info{ flex:1; min-width:0; }
-  .upcoming-top{ display:flex; align-items:baseline; gap:8px; flex-wrap:nowrap; min-width:0; }
+  .upcoming-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:nowrap; min-width:0; }
   .upcoming-date{ font-size:0.72rem; font-weight:700; color:var(--crimson); flex:0 0 auto; white-space:nowrap; }
   .upcoming-daysleft{
     flex:0 0 auto; font-size:0.62rem; font-weight:800; color:#fff;
     padding:2px 8px; border-radius:9px; white-space:nowrap;
   }
   .upcoming-name{
-    font-weight:700; font-size:0.9rem; color:var(--ink);
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:1 1 auto;
+    font-weight:800; font-size:0.98rem; color:var(--ink);
+    white-space:normal; word-break:break-word; line-height:1.25; margin-top:3px;
   }
   .upcoming-note{ font-size:0.72rem; color:var(--ink-soft); font-style:italic; margin-top:2px; word-break:break-word; }
   .upcoming-row .icon-btn{ flex:0 0 auto; width:34px; height:34px; font-size:0.9rem; }
@@ -1696,11 +1696,11 @@
         <div class="upcoming-info">
           <div class="upcoming-top">
             <span class="upcoming-date" style="color:${color};">🗓️ ${formatTRWithDay(v.date)}</span>
-            <span class="upcoming-name">${p.name}</span>
+            <span class="upcoming-daysleft" style="background:${color};">${daysLeftText}</span>
           </div>
+          <div class="upcoming-name">${p.name}</div>
           ${v.note ? `<div class="upcoming-note">📝 ${v.note}</div>` : ''}
         </div>
-        <span class="upcoming-daysleft" style="background:${color};">${daysLeftText}</span>
       `;
       container.appendChild(row);
     });
