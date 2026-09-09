@@ -4,10 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Hacamat Müşteri Takip</title>
-<link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#b3122e">
-<link rel="icon" href="./icon-192.png">
-<link rel="apple-touch-icon" href="./icon-192.png">
 <style>
   :root{
     --bg: #f0eee9;
@@ -745,7 +741,59 @@
     display:flex; align-items:center; justify-content:center; gap:8px; margin-top:16px;
   }
   .settings-logout-btn:active{ transform:translateY(1px); }
-</style>
+
+  /* ---- Dark Mode ---- */
+  html.dark-mode{
+    color-scheme:dark;
+  }
+  html.dark-mode{
+    --bg:#17181c;
+    --bg-deep:#202229;
+    --shadow-light:#292c33;
+    --shadow-dark:#0d0e11;
+    --ink:#f1f3f5;
+    --ink-soft:#a7adb7;
+    --input-bg:#202229;
+  }
+  html.dark-mode body{background:var(--bg);color:var(--ink);}
+  html.dark-mode .puff{
+    background:linear-gradient(160deg,rgba(43,46,54,.88),rgba(29,31,37,.88));
+    border-color:rgba(255,255,255,.07);
+  }
+  html.dark-mode .tabbar{
+    background:rgba(35,38,45,.82);
+    border-color:rgba(255,255,255,.07);
+  }
+  html.dark-mode .tab-btn:not(:last-child)::after{background:rgba(255,255,255,.10);}
+  html.dark-mode input[type="text"],html.dark-mode input[type="tel"],html.dark-mode textarea,
+  html.dark-mode .date-trigger,html.dark-mode .autocomplete-list,html.dark-mode .region-chip,
+  html.dark-mode .cup-display,html.dark-mode .cup-input{
+    background:var(--input-bg);color:var(--ink);
+  }
+  html.dark-mode input::placeholder,html.dark-mode textarea::placeholder{color:#858c98;}
+  html.dark-mode .autocomplete-count{background:var(--input-bg);border-color:rgba(255,255,255,.08);}
+  html.dark-mode .autocomplete-item{border-color:rgba(255,255,255,.07);}
+  html.dark-mode .autocomplete-item:active{background:rgba(255,255,255,.06);}
+  html.dark-mode .selected-person-chip{background:linear-gradient(160deg,#183b2a,#173126);}
+  html.dark-mode .patient-row{
+    background:linear-gradient(160deg,rgba(43,46,54,.95),rgba(29,31,37,.95));
+    border-color:rgba(255,255,255,.07);
+  }
+  html.dark-mode .modal-sheet,html.dark-mode .cup-keypad-sheet{
+    background:linear-gradient(160deg,#292c33,#1e2026);
+  }
+  html.dark-mode .cal-nav,html.dark-mode .modal-btn.today-btn,html.dark-mode .btn-secondary,
+  html.dark-mode .keypad-key,.dark-mode .settings-loc-box{
+    background:linear-gradient(160deg,#292c33,#1e2026);color:var(--ink);
+  }
+  html.dark-mode .modal-handle{background:#4b505b;}
+  html.dark-mode .settings-divider{background:rgba(255,255,255,.09);}
+  html.dark-mode .toggle-slider{background:linear-gradient(160deg,#202229,#30343d);}
+  html.dark-mode #authLoading{background:#17181c !important;}
+  html.dark-mode .tab-badge{box-shadow:0 0 0 2px var(--bg);}
+  html.dark-mode .cal-day.muted{color:#555b66;}
+  html.dark-mode .cal-day:active,html.dark-mode .autocomplete-item:active{background:rgba(255,255,255,.07);}
+  </style>
 </head>
 <body>
 
@@ -995,6 +1043,14 @@
     <div class="settings-btn-row">
       <button class="btn-secondary" id="waLocationSaveBtn" onclick="requestSaveWaLocation()">Konumu Kaydet</button>
       <button class="btn-secondary" id="waLocationClearBtn" style="display:none; color:var(--crimson);" onclick="clearWaLocation()">Sil</button>
+    </div>
+
+    <div class="settings-row">
+      <label for="darkModeToggle">🌙 Karanlık Mod</label>
+      <label class="toggle-switch">
+        <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode(this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
     </div>
 
     <div class="settings-divider"></div>
@@ -2765,3 +2821,22 @@
 
 </body>
 </html>
+
+<script>
+  function applyDarkMode(enabled){
+    document.documentElement.classList.toggle('dark-mode', enabled);
+    try{ localStorage.setItem('hacamat_dark_mode', enabled ? '1' : '0'); }catch(e){}
+    var toggle=document.getElementById('darkModeToggle');
+    if(toggle) toggle.checked=enabled;
+  }
+  function toggleDarkMode(enabled){ applyDarkMode(!!enabled); }
+  (function(){
+    var enabled=false;
+    try{ enabled=localStorage.getItem('hacamat_dark_mode')==='1'; }catch(e){}
+    if(enabled) document.documentElement.classList.add('dark-mode');
+    document.addEventListener('DOMContentLoaded',function(){
+      var toggle=document.getElementById('darkModeToggle');
+      if(toggle) toggle.checked=enabled;
+    });
+  })();
+</script>
